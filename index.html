@@ -1,7 +1,2328 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-<meta http-equiv="refresh" content="0; url=index-2.html">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>한밤의 탁자 — 마피아 추리</title>
+<style>
+  :root{
+    --ink:#13151c; --ink2:#1b1f2a; --panel:#222736; --line:#343b4d;
+    --bone:#e9e3d5; --muted:#9a988e; --amber:#d9a441; --amber-dim:#7a5e26;
+    --crimson:#b3433a; --sage:#6f9b7d; --neutral:#a878c0;
+    --serif:"Hoefler Text","Iowan Old Style","Apple Garamond",Georgia,"Nanum Myeongjo","Batang",serif;
+    --sans:-apple-system,"Avenir Next","Segoe UI",system-ui,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(120% 80% at 50% -10%, #20242f 0%, var(--ink) 55%, #0d0e13 100%);
+    color:var(--bone); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; min-height:100%;
+    display:flex; align-items:flex-start; justify-content:center;
+  }
+  #app{width:100%; max-width:460px; min-height:100vh; padding:26px 20px 40px;
+       display:flex; flex-direction:column; gap:18px}
+  .eyebrow{font:600 11px/1 var(--mono); letter-spacing:.32em; text-transform:uppercase;
+           color:var(--amber); opacity:.85}
+  h1{font-family:var(--serif); font-weight:500; font-size:30px; line-height:1.1; letter-spacing:.01em}
+  h2{font-family:var(--serif); font-weight:500; font-size:23px; line-height:1.15}
+  p{color:var(--bone); line-height:1.55; font-size:15px}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+  .card{background:linear-gradient(180deg,var(--ink2),#171b24); border:1px solid var(--line);
+        border-radius:16px; padding:18px; display:flex; flex-direction:column; gap:12px}
+  .row{display:flex; gap:10px; flex-wrap:wrap}
+  .grow{flex:1}
+  button{font:600 16px var(--sans); color:var(--ink); background:var(--bone);
+         border:none; border-radius:12px; padding:15px 16px; cursor:pointer;
+         width:100%; transition:transform .06s ease, opacity .15s ease}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.35; cursor:default}
+  button.ghost{background:transparent; color:var(--bone); border:1px solid var(--line)}
+  button.amber{background:var(--amber); color:#241a06}
+  button.danger{background:var(--crimson); color:#fff}
+  button.choice{background:var(--panel); color:var(--bone); border:1px solid var(--line);
+                text-align:left; font-weight:500}
+  button.choice.sel{border-color:var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+  input{width:100%; font:500 16px var(--sans); color:var(--bone); background:#0f1118;
+        border:1px solid var(--line); border-radius:10px; padding:13px 14px}
+  input::placeholder{color:#5c5b54}
+  .pill{display:inline-flex; align-items:center; gap:6px; font:600 11px var(--mono);
+        letter-spacing:.14em; text-transform:uppercase; padding:5px 9px; border-radius:999px;
+        border:1px solid var(--line); color:var(--muted)}
+  .stepper{display:flex; align-items:center; gap:14px; justify-content:center}
+  .stepper b{font-family:var(--serif); font-size:34px; min-width:38px; text-align:center}
+  .stepper button{width:54px; height:54px; border-radius:50%; font-size:24px; flex:none}
+  .log{display:flex; flex-direction:column; gap:7px; max-height:34vh; overflow:auto;
+       padding-right:4px}
+  .log .line{font-size:14px; line-height:1.45; padding:9px 11px; border-radius:9px; background:#0f1118;
+             border-left:3px solid var(--amber-dim)}
+  .log .sys{border-left-color:var(--amber)}
+  .log .dead{border-left-color:var(--crimson); color:#e7b3ad}
+  .tag{font:600 11px var(--mono); letter-spacing:.1em; text-transform:uppercase}
+  .center{text-align:center}
+  .seatlist{display:flex; flex-direction:column; gap:8px}
+  .seat{display:flex; align-items:center; gap:10px; padding:11px 13px; border:1px solid var(--line);
+        border-radius:11px; background:#0f1118; font-size:15px}
+  .seat .dot{width:9px;height:9px;border-radius:50%;background:var(--sage);flex:none}
+  .seat.dead .dot{background:var(--crimson)}
+  .seat.dead{color:var(--muted); text-decoration:line-through}
+  .spacer{flex:1}
+  /* 정숙 게이트(시그니처) */
+  #gate{position:fixed; inset:0; z-index:50; display:none; flex-direction:column;
+        align-items:center; justify-content:center; gap:18px; text-align:center; padding:30px;
+        background:radial-gradient(60% 50% at 50% 42%, #2a2110 0%, #0c0d12 70%);}
+  #gate.on{display:flex}
+  .flame{width:14px;height:34px;border-radius:50% 50% 45% 45%;
+         background:linear-gradient(180deg,#ffe39a,var(--amber) 55%,#9c5a16);
+         box-shadow:0 0 26px 10px rgba(217,164,65,.45); transform-origin:bottom center;
+         animation:flick 2.2s ease-in-out infinite}
+  @keyframes flick{0%,100%{transform:scale(1) rotate(-1deg)}50%{transform:scale(1.07,1.12) rotate(1.5deg)}}
+  #gate .who{font-family:var(--serif); font-size:30px}
+  #gate .hint{color:var(--muted); font-size:14px; max-width:260px}
+  #gate .tap{margin-top:8px; font:600 12px var(--mono); letter-spacing:.28em; text-transform:uppercase; color:var(--amber)}
+  @media (prefers-reduced-motion: reduce){ .flame{animation:none} }
+  .roleface{display:flex; flex-direction:column; gap:6px; align-items:center; text-align:center;
+            padding:14px 0}
+  .roleface .rn{font-family:var(--serif); font-size:34px}
+  .fade{animation:fade .35s ease}
+  @keyframes fade{from{opacity:0; transform:translateY(6px)}to{opacity:1}}
+  /* 가로 모드 · 컴팩트 UI */
+  @media (orientation: landscape){
+    #app{max-width:360px; padding:10px 14px 16px; gap:9px; min-height:auto}
+    .card{padding:11px; border-radius:12px; gap:8px}
+    h1{font-size:22px} h2{font-size:18px}
+    p{font-size:13px} .small{font-size:11.5px}
+    .eyebrow{font-size:10px; letter-spacing:.26em}
+    button{font-size:13.5px; padding:9px 12px; border-radius:10px}
+    .seat{padding:7px 10px; font-size:13px; border-radius:9px}
+    .seatlist{gap:6px}
+    .roleface{padding:6px 0} .roleface .rn{font-size:26px}
+    .stepper b{font-size:26px} .stepper button{width:44px;height:44px;font-size:20px}
+    .log{max-height:26vh}
+  }
+  /* 투표 용지(화면을 다 가리지 않는 종이) */
+  .ballot{background:linear-gradient(180deg,#efe7d2,#e4dac0); color:#2a2519;
+          border:1px solid #cbbf9e; border-radius:7px; padding:14px;
+          box-shadow:0 12px 34px rgba(0,0,0,.55); transform:rotate(-1.4deg);
+          max-width:280px; margin:6px auto; display:flex; flex-direction:column; gap:9px}
+  .ballot .eyebrow{color:#8a6a22; opacity:1}
+  .ballot h2{color:#241f15}
+  .ballot .muted{color:#7c7252}
+  .ballot .seatlist{max-height:38vh; overflow:auto; gap:6px}
+  .ballot button.choice{background:#fbf7ec; color:#2a2519; border:1px solid #d6cba6}
+  .ballot button.choice.sel{border-color:#9a6b1a; box-shadow:0 0 0 1px #9a6b1a inset}
+  .ballot button.amber{background:#9a6b1a; color:#fdf6e6}
+  .ballot button.ghost{background:transparent; color:#5e553f; border:1px solid #c7bb98}
+</style>
 </head>
-<body></body>
+<body>
+<div id="app"></div>
+<div id="gate" tabindex="0">
+  <div class="flame"></div>
+  <div class="eyebrow">기기를 넘기세요</div>
+  <div class="who" id="gateWho"></div>
+  <div class="hint" id="gateHint">다른 사람은 화면을 보지 마세요.</div>
+  <div class="tap">탭하여 확인</div>
+</div>
+
+<script>
+"use strict";
+/* ──────────────────────────────────────────────────────────────
+   한밤의 탁자 — 마피아 추리
+   · 오프라인: 한 기기 패스앤플레이
+   · 온라인: Trystero(P2P) 호스트 권위 + 3D + 실시간 채팅(호스트 라우팅 스코프)
+   ────────────────────────────────────────────────────────────── */
+
+const app = document.getElementById('app');
+const gate = document.getElementById('gate');
+const gateWho = document.getElementById('gateWho');
+const gateHint = document.getElementById('gateHint');
+
+/* 초기화 단계의 오류도 화면에 보이도록 최상단에서 등록 */
+window.addEventListener('error', e=>{ try{ showErr((e.error&&e.error.message)||e.message||'오류'); }catch(_){} });
+window.addEventListener('unhandledrejection', e=>{ try{ console.warn('unhandledrejection:', (e.reason&&e.reason.message)||e.reason); }catch(_){} });
+
+const ROLES = {
+  mafia:    {id:'mafia',    name:'마피아', faction:'mafia',   ability:'kill',        night:true,  color:'var(--crimson)', desc:'밤마다 한 명을 지목해 살해한다.'},
+  citizen:  {id:'citizen',  name:'시민',   faction:'citizen', ability:'none',        night:false, color:'var(--bone)',    desc:'특별한 능력은 없다. 추리로 마피아를 찾아라.'},
+  doctor:   {id:'doctor',   name:'의사',   faction:'citizen', ability:'protect',     night:true,  color:'var(--sage)',    desc:'밤마다 한 명을 보호해 그날의 살해를 막는다.'},
+  detective:{id:'detective',name:'탐정',   faction:'citizen', ability:'investigate', night:true,  color:'var(--amber)',   desc:'밤마다 한 명을 조사해 마피아 여부를 확인한다.'},
+  jester:   {id:'jester',   name:'광대',   faction:'neutral', ability:'none',        night:false, color:'var(--neutral)', desc:'투표로 처형당하면 혼자 승리한다.'},
+};
+
+let S = null; // 오프라인 게임 상태
+
+/* ---------- 유틸 ---------- */
+const $ = (h)=>{ const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.firstChild; };
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function alive(){ return S.players.filter(p=>p.alive); }
+function aliveExcept(id){ return alive().filter(p=>p.id!==id); }
+function name(id){ return S.players[id]?.name ?? '?'; }
+function clearApp(){ app.innerHTML=''; }
+function add(node){ app.appendChild(node); }
+
+/* 정숙 게이트: 넘긴 뒤 탭하면 onReveal */
+function showGate(who, hint, onReveal){
+  gateWho.textContent = who + ' 차례';
+  gateHint.textContent = hint || '다른 사람은 화면을 보지 마세요.';
+  gate.classList.add('on');
+  const handler = ()=>{ gate.classList.remove('on'); gate.removeEventListener('click', handler); onReveal(); };
+  gate.addEventListener('click', handler);
+}
+
+function roleSpread(n, jester){
+  let ids;
+  if(n<=2) ids=['mafia','citizen'];
+  else if(n===3) ids=['mafia','citizen','citizen'];
+  else if(n===4) ids=['mafia','doctor','citizen','citizen'];
+  else if(n===5) ids=['mafia','doctor','detective','citizen','citizen'];
+  else ids=['mafia','mafia','doctor','detective','citizen','citizen'];
+  if(jester && n>=5){ const i=ids.lastIndexOf('citizen'); if(i>=0) ids[i]='jester'; }
+  return shuffle(ids);
+}
+
+/* ════════════════ 셋업(오프라인) ════════════════ */
+function screenSetup(){
+  clearApp();
+  S = { count:5, jester:false, names:[] };
+  for(let i=0;i<6;i++) S.names[i] = '플레이어 '+(i+1);
+
+  const wrap = $(`<div class="fade" style="display:flex;flex-direction:column;gap:18px"></div>`);
+  wrap.appendChild($(`<div class="eyebrow">한 기기를 돌려가며</div>`));
+  wrap.appendChild($(`<h1>한밤의 탁자</h1>`));
+  wrap.appendChild($(`<p class="muted">탁자에 둘러앉아 한 대의 기기를 넘기며 플레이합니다. 차례가 오면 받아서 확인하고, 끝나면 다음 사람에게 넘기세요.</p>`));
+
+  const card = $(`<div class="card"></div>`);
+  card.appendChild($(`<div class="eyebrow">인원</div>`));
+  const step = $(`<div class="stepper"></div>`);
+  const minus = $(`<button class="ghost">−</button>`);
+  const num = $(`<b>${S.count}</b>`);
+  const plus = $(`<button class="ghost">+</button>`);
+  step.append(minus,num,plus);
+  card.appendChild(step);
+
+  const namesBox = $(`<div style="display:flex;flex-direction:column;gap:8px"></div>`);
+  const jesterRow = $(`<div class="row" style="align-items:center;justify-content:space-between"></div>`);
+  const jbtn = $(`<button class="choice" style="width:auto;flex:1">광대(중립) 포함 — 5인 이상</button>`);
+  jesterRow.appendChild(jbtn);
+
+  function renderNames(){
+    namesBox.innerHTML='';
+    for(let i=0;i<S.count;i++){
+      const inp = $(`<input value="${S.names[i]}" maxlength="10">`);
+      inp.addEventListener('input', e=>S.names[i]=e.target.value);
+      namesBox.appendChild(inp);
+    }
+    jbtn.classList.toggle('sel', S.jester);
+    jbtn.disabled = S.count<5;
+    if(S.count<5){ S.jester=false; jbtn.classList.remove('sel'); }
+    num.textContent=S.count;
+  }
+  minus.onclick=()=>{ S.count=Math.max(2,S.count-1); renderNames(); };
+  plus.onclick =()=>{ S.count=Math.min(6,S.count+1); renderNames(); };
+  jbtn.onclick =()=>{ if(S.count>=5){ S.jester=!S.jester; renderNames(); } };
+
+  card.appendChild($(`<div class="eyebrow" style="margin-top:4px">이름</div>`));
+  card.appendChild(namesBox);
+  card.appendChild(jesterRow);
+  renderNames();
+
+  const start = $(`<button class="amber">역할 나누기</button>`);
+  start.onclick = ()=>beginGame();
+
+  wrap.append(card, start);
+  wrap.appendChild($(`<p class="small muted center">2~3인은 추리가 약합니다. 4인 이상을 권장해요.</p>`));
+  add(wrap);
+}
+
+/* ════════════════ 게임 시작(오프라인) ════════════════ */
+function beginGame(){
+  const n=S.count;
+  const ids = roleSpread(n, S.jester);
+  const players = [];
+  for(let i=0;i<n;i++){
+    players.push({
+      id:i, name:(S.names[i]||('플레이어 '+(i+1))).slice(0,10),
+      role:ROLES[ids[i]], alive:true, revealed:false, deathCause:null
+    });
+  }
+  S = { players, round:1, log:[], phase:'roleReveal', winner:null,
+        nightActions:[], votes:{}, notes:[] };
+  S.log.push({t:'sys', s:`${n}명에게 역할이 분배되었습니다.`});
+  seqRoleReveal(0);
+}
+
+/* ════════════════ 역할 공개(오프라인) ════════════════ */
+function seqRoleReveal(i){
+  if(i>=S.players.length){ startNight(); return; }
+  const p=S.players[i];
+  showGate(p.name, '당신의 역할을 확인하세요.', ()=>{
+    clearApp();
+    const card=$(`<div class="card fade center"></div>`);
+    card.appendChild($(`<div class="eyebrow">${p.name}</div>`));
+    const face=$(`<div class="roleface"></div>`);
+    face.appendChild($(`<div class="rn" style="color:${p.role.color}">${p.role.name}</div>`));
+    const fac = p.role.faction==='mafia'?'마피아 진영':p.role.faction==='neutral'?'중립':'시민 진영';
+    face.appendChild($(`<div class="pill">${fac}</div>`));
+    card.appendChild(face);
+    card.appendChild($(`<p class="muted">${p.role.desc}</p>`));
+    const next=$(`<button class="amber">확인했어요 · 넘기기</button>`);
+    next.onclick=()=>seqRoleReveal(i+1);
+    clearApp(); add(card); add(next);
+  });
+}
+
+/* ════════════════ 밤(오프라인) ════════════════ */
+function startNight(){
+  S.phase='night'; S.nightActions=[];
+  S.actorQueue = alive().filter(p=>p.role.night).map(p=>p.id);
+  introNotice();
+}
+function introNotice(){
+  cue('intro');
+  clearApp();
+  const c=$(`<div class="card fade center"></div>`);
+  c.appendChild($(`<div class="eyebrow">${S.round}일차 · 자기소개</div>`));
+  c.appendChild($(`<h2>둘러앉아 자기소개</h2>`));
+  c.appendChild($(`<p class="muted">좌석 순서대로 한 사람씩 말로 자기소개하세요. 끝나면 밤이 찾아옵니다.</p>`));
+  add(c);
+  const b=$(`<button class="amber">밤이 되었습니다</button>`);
+  b.onclick=()=>seqNight(0);
+  add(b);
+}
+function seqNight(qi){
+  if(qi===0) cue('night');
+  if(qi>=S.actorQueue.length){ morning(); return; }
+  const p=S.players[S.actorQueue[qi]];
+  if(!p.alive){ seqNight(qi+1); return; }
+  showGate(p.name, '밤입니다. 능력을 사용하세요.', ()=>nightTurn(p, qi));
+}
+function nightTurn(p, qi){
+  clearApp();
+  const verb = p.role.ability==='kill'?'살해할 대상':p.role.ability==='protect'?'보호할 대상':'조사할 대상';
+  const c=$(`<div class="card fade"></div>`);
+  c.appendChild($(`<div class="eyebrow" style="color:${p.role.color}">밤 · ${p.role.name}</div>`));
+  c.appendChild($(`<h2>${verb}을 고르세요</h2>`));
+  const list=$(`<div class="seatlist"></div>`);
+  let chosen=null;
+  aliveExcept(p.id).forEach(t=>{
+    const b=$(`<button class="choice">${t.name}</button>`);
+    b.onclick=()=>{ chosen=t.id; [...list.children].forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); confirm.disabled=false; };
+    list.appendChild(b);
+  });
+  c.appendChild(list);
+  add(c);
+  const confirm=$(`<button class="amber" disabled>결정</button>`);
+  const skip=$(`<button class="ghost">건너뛰기</button>`);
+  confirm.onclick=()=>{
+    S.nightActions.push({actor:p.id, type:p.role.ability, target:chosen});
+    if(p.role.ability==='investigate'){ investigateResult(p, chosen, qi); }
+    else seqNight(qi+1);
+  };
+  skip.onclick=()=>{ seqNight(qi+1); };
+  add(confirm); add(skip);
+}
+function investigateResult(detective, targetId, qi){
+  const t=S.players[targetId];
+  const isMafia = t.role.faction==='mafia';
+  clearApp();
+  const c=$(`<div class="card fade center"></div>`);
+  c.appendChild($(`<div class="eyebrow" style="color:var(--amber)">조사 결과 · 당신만 봅니다</div>`));
+  c.appendChild($(`<h2>${t.name}</h2>`));
+  c.appendChild($(`<div class="rn" style="font-family:var(--serif);font-size:26px;color:${isMafia?'var(--crimson)':'var(--sage)'}">${isMafia?'마피아입니다':'마피아가 아닙니다'}</div>`));
+  add(c);
+  const b=$(`<button class="amber">확인 · 넘기기</button>`);
+  b.onclick=()=>seqNight(qi+1);
+  add(b);
+}
+
+/* ════════════════ 아침(오프라인) ════════════════ */
+function morning(){
+  S.phase='morning';
+  cue('morning');
+  const prot=new Set(S.nightActions.filter(a=>a.type==='protect').map(a=>a.target));
+  const deaths=[];
+  S.nightActions.filter(a=>a.type==='kill').forEach(a=>{
+    if(a.target==null) return;
+    if(prot.has(a.target)) return;
+    const v=S.players[a.target];
+    if(v.alive){ v.alive=false; v.deathCause='night'; if(!deaths.includes(v)) deaths.push(v); }
+  });
+  if(deaths.length===0) S.log.push({t:'sys', s:`${S.round}일차 아침 — 지난 밤 아무도 죽지 않았습니다.`});
+  else deaths.forEach(v=>S.log.push({t:'dead', s:`${v.name} 님이 밤사이 사망했습니다.`}));
+
+  const w=checkWin(); if(w){ gameover(w); return; }
+
+  clearApp();
+  const c=$(`<div class="card fade"></div>`);
+  c.appendChild($(`<div class="eyebrow">${S.round}일차 · 아침</div>`));
+  c.appendChild($(`<h2>${deaths.length?'밤의 희생자':'평화로운 밤'}</h2>`));
+  if(deaths.length) c.appendChild($(`<p>${deaths.map(v=>v.name).join(', ')} 님이 사망했습니다.</p>`));
+  else c.appendChild($(`<p class="muted">아무도 죽지 않았습니다.</p>`));
+  c.appendChild(seatBoard());
+  add(c);
+  const b=$(`<button class="amber">토론 시작</button>`);
+  b.onclick=()=>discussion();
+  add(b);
+}
+
+/* ════════════════ 토론(오프라인) ════════════════ */
+function discussion(){
+  S.phase='discussion';
+  cue('discussion');
+  clearApp();
+  const c=$(`<div class="card fade center"></div>`);
+  c.appendChild($(`<div class="eyebrow">${S.round}일차 · 토론</div>`));
+  c.appendChild($(`<h2>누가 마피아일까</h2>`));
+  const timer=$(`<div class="rn" style="font-family:var(--serif);font-size:46px;color:var(--amber)">3:00</div>`);
+  c.appendChild(timer);
+  c.appendChild($(`<p class="muted small">자유롭게 토론하세요. 시간이 끝나면 투표로 넘어갑니다.</p>`));
+  add(c);
+  const skip=$(`<button class="amber">바로 투표</button>`);
+  add(skip);
+
+  let left=180;
+  const tick=setInterval(()=>{
+    left--; const m=(left/60|0), s=(left%60);
+    timer.textContent = `${m}:${String(s).padStart(2,'0')}`;
+    if(left<=0){ done(); }
+  },1000);
+  function done(){ clearInterval(tick); startVote(); }
+  skip.onclick=done;
+}
+
+/* ════════════════ 투표(오프라인) ════════════════ */
+function startVote(){
+  S.phase='voting'; S.votes={};
+  cue('voting');
+  S.voteQueue = alive().map(p=>p.id);
+  seqVote(0);
+}
+function seqVote(qi){
+  if(qi>=S.voteQueue.length){ punishment(); return; }
+  const p=S.players[S.voteQueue[qi]];
+  if(!p.alive){ seqVote(qi+1); return; }
+  showGate(p.name, '처형할 사람에게 투표하세요.', ()=>voteTurn(p,qi));
+}
+function voteTurn(p, qi){
+  clearApp();
+  const c=$(`<div class="card fade"></div>`);
+  c.appendChild($(`<div class="eyebrow">투표 · 비공개</div>`));
+  c.appendChild($(`<h2>누구를 처형할까요</h2>`));
+  const list=$(`<div class="seatlist"></div>`);
+  let chosen=null;
+  aliveExcept(p.id).forEach(t=>{
+    const b=$(`<button class="choice">${t.name}${t.revealed?` <span class="muted small">· ${t.role.name} 공개됨</span>`:''}</button>`);
+    b.onclick=()=>{ chosen=t.id; [...list.children].forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); ok.disabled=false; };
+    list.appendChild(b);
+  });
+  c.appendChild(list); add(c);
+  const ok=$(`<button class="amber" disabled>투표 · 넘기기</button>`);
+  const ab=$(`<button class="ghost">기권</button>`);
+  ok.onclick=()=>{ S.votes[p.id]=chosen; seqVote(qi+1); };
+  ab.onclick=()=>{ S.votes[p.id]=null; seqVote(qi+1); };
+  add(ok); add(ab);
+}
+
+/* ════════════════ 처벌(오프라인) ════════════════ */
+function punishment(){
+  S.phase='punishment';
+  cue('punishment');
+  const counts={};
+  Object.values(S.votes).forEach(t=>{ if(t!=null) counts[t]=(counts[t]||0)+1; });
+  let max=0, top=null, tie=false;
+  Object.entries(counts).forEach(([id,n])=>{ if(n>max){max=n;top=+id;tie=false;} else if(n===max){tie=true;} });
+
+  clearApp();
+  const c=$(`<div class="card fade"></div>`);
+  c.appendChild($(`<div class="eyebrow">${S.round}일차 · 처벌</div>`));
+
+  if(top===null || tie){
+    c.appendChild($(`<h2>처벌 없음</h2>`));
+    c.appendChild($(`<p class="muted">${top===null?'유효한 표가 없습니다.':'최다 득표가 동점입니다.'} 이번엔 아무도 처벌받지 않습니다.</p>`));
+    S.log.push({t:'sys', s:'투표 동점/무효 — 처벌 없음.'});
+  } else {
+    const p=S.players[top];
+    if(!p.revealed){
+      p.revealed=true;
+      c.appendChild($(`<h2>역할 공개</h2>`));
+      c.appendChild($(`<p>${p.name} 님이 최다 득표(${max}표). 역할이 공개됩니다: <b style="color:${p.role.color}">${p.role.name}</b>. 이번엔 생존합니다.</p>`));
+      S.log.push({t:'sys', s:`${p.name} 님의 역할이 공개됨: ${p.role.name} (생존).`});
+    } else {
+      p.alive=false; p.deathCause='vote';
+      c.appendChild($(`<h2 style="color:var(--crimson)">처형</h2>`));
+      c.appendChild($(`<p>${p.name} 님이 다시 최다 득표(${max}표). 처형되었습니다.</p>`));
+      S.log.push({t:'dead', s:`${p.name} 님이 투표로 처형되었습니다.`});
+    }
+  }
+  c.appendChild(seatBoard());
+  add(c);
+
+  const w=checkWin(); if(w){ const b=$(`<button class="amber">결과 보기</button>`); b.onclick=()=>gameover(w); add(b); return; }
+  const b=$(`<button class="amber">비밀 대화</button>`);
+  b.onclick=()=>startSecret();
+  add(b);
+}
+
+/* ════════════════ 비밀 쪽지(오프라인) ════════════════ */
+function startSecret(){
+  S.phase='secret';
+  cue('secret');
+  S.secretQueue = alive().map(p=>p.id);
+  seqSecret(0);
+}
+function seqSecret(qi){
+  if(qi>=S.secretQueue.length){ S.round++; startNight(); return; }
+  const p=S.players[S.secretQueue[qi]];
+  if(!p.alive){ seqSecret(qi+1); return; }
+  showGate(p.name, '도착한 쪽지를 확인하고, 한 명에게 보낼 수 있어요.', ()=>secretTurn(p,qi));
+}
+function secretTurn(p, qi){
+  clearApp();
+  const c=$(`<div class="card fade"></div>`);
+  c.appendChild($(`<div class="eyebrow">비밀 대화 · 당신만 봅니다</div>`));
+  const inbox=S.notes.filter(n=>n.to===p.id);
+  if(inbox.length){
+    c.appendChild($(`<div class="tag muted">받은 쪽지</div>`));
+    inbox.forEach(n=>c.appendChild($(`<div class="seat"><div class="dot"></div><div><b>${name(n.from)}</b> — ${escapeHtml(n.text)}</div></div>`)));
+  } else {
+    c.appendChild($(`<p class="muted small">도착한 쪽지가 없습니다.</p>`));
+  }
+  c.appendChild($(`<div class="tag muted" style="margin-top:6px">보내기 (선택)</div>`));
+  const list=$(`<div class="seatlist"></div>`);
+  let to=null;
+  aliveExcept(p.id).forEach(t=>{
+    const b=$(`<button class="choice">${t.name}</button>`);
+    b.onclick=()=>{ to=t.id; [...list.children].forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); };
+    list.appendChild(b);
+  });
+  c.appendChild(list);
+  const inp=$(`<input placeholder="비밀 메시지..." maxlength="120">`);
+  c.appendChild(inp);
+  add(c);
+  const send=$(`<button class="amber">넘기기</button>`);
+  send.onclick=()=>{
+    if(to!=null && inp.value.trim()) S.notes.push({from:p.id, to, text:inp.value.trim()});
+    seqSecret(qi+1);
+  };
+  add(send);
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ════════════════ 승리 판정(오프라인) ════════════════ */
+function checkWin(){
+  const jester=S.players.find(p=>p.role.faction==='neutral' && !p.alive && p.deathCause==='vote');
+  if(jester) return {who:'jester', label:'광대 단독 승리', color:'var(--neutral)'};
+  const m=alive().filter(p=>p.role.faction==='mafia').length;
+  const c=alive().filter(p=>p.role.faction==='citizen').length;
+  if(m===0) return {who:'citizen', label:'시민 진영 승리', color:'var(--sage)'};
+  if(m>=c)  return {who:'mafia',   label:'마피아 진영 승리', color:'var(--crimson)'};
+  return null;
+}
+
+/* ════════════════ 결과(오프라인) ════════════════ */
+function gameover(w){
+  S.phase='gameover';
+  cue('gameover');
+  clearApp();
+  const c=$(`<div class="card fade center"></div>`);
+  c.appendChild($(`<div class="eyebrow">게임 종료</div>`));
+  c.appendChild($(`<h1 style="color:${w.color}">${w.label}</h1>`));
+  add(c);
+
+  const board=$(`<div class="card"></div>`);
+  board.appendChild($(`<div class="eyebrow">전원 공개</div>`));
+  const list=$(`<div class="seatlist"></div>`);
+  S.players.forEach(p=>{
+    const state = p.alive?'생존':(p.deathCause==='vote'?'처형':'사망');
+    const seat=$(`<div class="seat ${p.alive?'':'dead'}"><div class="dot"></div>
+      <div class="grow"><b>${p.name}</b> <span class="muted small">· ${state}</span></div>
+      <div class="tag" style="color:${p.role.color}">${p.role.name}</div></div>`);
+    list.appendChild(seat);
+  });
+  board.appendChild(list);
+  add(board);
+
+  const log=$(`<div class="card"></div>`);
+  log.appendChild($(`<div class="eyebrow">기록</div>`));
+  log.appendChild(buildLog());
+  add(log);
+
+  const again=$(`<button class="amber">다시 하기</button>`);
+  again.onclick=()=>screenSetup();
+  add(again);
+}
+
+/* ---------- 공용 위젯 ---------- */
+function seatBoard(){
+  const list=$(`<div class="seatlist"></div>`);
+  S.players.forEach(p=>{
+    const seat=$(`<div class="seat ${p.alive?'':'dead'}"><div class="dot"></div>
+      <div class="grow">${p.name}</div>
+      ${p.revealed?`<div class="tag" style="color:${p.role.color}">${p.role.name}</div>`:`<div class="tag muted">?</div>`}</div>`);
+    list.appendChild(seat);
+  });
+  return list;
+}
+function buildLog(){
+  const box=$(`<div class="log"></div>`);
+  S.log.forEach(l=>box.appendChild($(`<div class="line ${l.t==='dead'?'dead':'sys'}">${l.s}</div>`)));
+  return box;
+}
+
+/* ---------- 연출 / 사운드 ---------- */
+let audioCtx=null, muted=false;
+const CUE={ intro:{c:'#d9a441',t:'자기소개'}, night:{c:'#7fa8d6',t:'밤'}, morning:{c:'#d9a441',t:'아침'}, discussion:{c:'#e9e3d5',t:'토론'}, voting:{c:'#d98f41',t:'투표'}, punishment:{c:'#b3433a',t:'처벌'}, secret:{c:'#a878c0',t:'비밀 대화'}, gameover:{c:'#e9e3d5',t:'종료'} };
+function initCueUI(){
+  const o=document.createElement('div'); o.id='cue';
+  Object.assign(o.style,{position:'fixed',left:'0',right:'0',top:'0',display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',opacity:'0',transition:'opacity .3s ease',zIndex:'60',paddingTop:'calc(env(safe-area-inset-top, 0px) + 10px)'});
+  const t=document.createElement('div'); t.id='cueText';
+  Object.assign(t.style,{fontFamily:'var(--sans)',fontWeight:'600',fontSize:'14px',letterSpacing:'.22em',color:'#fff',textShadow:'0 1px 6px rgba(0,0,0,.8)',padding:'5px 14px',borderRadius:'999px',background:'rgba(15,17,24,.5)',backdropFilter:'blur(4px)'});
+  o.appendChild(t); document.body.appendChild(o);
+  const mb=document.createElement('button'); mb.textContent='🔊';
+  Object.assign(mb.style,{position:'fixed',top:'10px',right:'10px',width:'auto',padding:'7px 10px',borderRadius:'10px',background:'transparent',border:'1px solid var(--line)',color:'var(--bone)',fontSize:'15px',zIndex:'70',cursor:'pointer'});
+  mb.onclick=()=>{ muted=!muted; mb.textContent=muted?'🔇':'🔊'; };
+  document.body.appendChild(mb);
+}
+function cue(key){
+  const def=CUE[key]; if(!def) return;
+  const o=document.getElementById('cue'), t=document.getElementById('cueText'); if(!o||!t) return;
+  t.textContent=def.t; t.style.color='#fff';
+  o.style.opacity='1'; setTimeout(()=>{ o.style.opacity='0'; }, 1100);
+  tone(key);
+}
+function tone(key){
+  if(muted) return;
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    const now=audioCtx.currentTime;
+    const notes = key==='night'?[146.83]:key==='morning'?[523.25,659.25]:key==='voting'?[392]:key==='punishment'?[110,138.59]:key==='gameover'?[392,493.88,587.33]:key==='secret'?[330,247]:[440];
+    const dark = key==='night'||key==='punishment';
+    notes.forEach((f,i)=>{ const osc=audioCtx.createOscillator(), g=audioCtx.createGain();
+      osc.type = dark?'sawtooth':'sine'; osc.frequency.value=f;
+      const s=now+i*0.12; g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.13,s+0.03); g.gain.exponentialRampToValueAtTime(0.0008,s+0.6);
+      osc.connect(g).connect(audioCtx.destination); osc.start(s); osc.stop(s+0.66); });
+  }catch(e){}
+}
+
+/* ════════ 온라인 멀티플레이 — 호스트 권위 P2P (Trystero) ════════ */
+let NET=null, O=null, ROSTER=[], lobbyJester=false, discTick=null;
+
+function showErr(msg){
+  let bar=document.getElementById('errbar');
+  if(!bar){ bar=document.createElement('div'); bar.id='errbar';
+    Object.assign(bar.style,{position:'fixed',left:'8px',right:'8px',bottom:'8px',zIndex:'80',
+      background:'#3a1714',border:'1px solid #b3433a',color:'#f2cfca',font:'13px var(--mono)',
+      padding:'10px 12px',borderRadius:'10px'}); document.body.appendChild(bar); }
+  bar.textContent='⚠ '+msg;
+}
+
+function screenHome(){
+  clearApp();
+  const w=$(`<div class="fade" style="display:flex;flex-direction:column;gap:18px"></div>`);
+  w.appendChild($(`<div class="eyebrow">한밤의 탁자</div>`));
+  w.appendChild($(`<h1>마피아 추리</h1>`));
+  w.appendChild($(`<p class="muted">한 기기를 돌려가며 하거나, 각자 휴대폰으로 친구를 초대해 함께 즐기세요.</p>`));
+  const a=$(`<button class="amber">온라인으로 친구와</button>`); a.onclick=screenOnlineMenu;
+  const b=$(`<button class="ghost">이 기기 하나로 · 패스앤플레이</button>`); b.onclick=screenSetup;
+  w.append(a,b);
+  add(w);
+}
+
+function screenOnlineMenu(){
+  clearApp();
+  const w=$(`<div class="fade" style="display:flex;flex-direction:column;gap:16px"></div>`);
+  w.appendChild($(`<div class="eyebrow">온라인 · 친구 초대</div>`));
+  w.appendChild($(`<h1>방 만들기 / 참가</h1>`));
+
+  const c1=$(`<div class="card"></div>`);
+  c1.appendChild($(`<div class="eyebrow">새 방 열기</div>`));
+  c1.appendChild($(`<p class="muted small">방을 열고 표시되는 코드를 친구에게 알려주세요. 친구는 이 화면을 똑같이 열어 ‘참가’합니다.</p>`));
+  const n1=$(`<input placeholder="내 이름" maxlength="10">`);
+  c1.appendChild(n1);
+  const mk=$(`<button class="amber">방 만들기 (호스트)</button>`);
+  mk.onclick=()=>{ const nm=(n1.value.trim()||'호스트').slice(0,10); connectRoom(genCode(), true, nm); };
+  c1.appendChild(mk);
+  w.appendChild(c1);
+
+  const c2=$(`<div class="card"></div>`);
+  c2.appendChild($(`<div class="eyebrow">방 참가</div>`));
+  const code=$(`<input placeholder="방 코드 (예: AB7K)" maxlength="4" style="text-transform:uppercase;letter-spacing:.2em">`);
+  const n2=$(`<input placeholder="내 이름" maxlength="10">`);
+  c2.append(code,n2);
+  const jn=$(`<button class="amber">참가하기</button>`);
+  jn.onclick=()=>{ const cc=code.value.trim().toUpperCase(); if(cc.length<4){ showErr('방 코드 4자를 입력하세요.'); return; } const nm=(n2.value.trim()||'게스트').slice(0,10); connectRoom(cc,false,nm); };
+  c2.appendChild(jn);
+  w.appendChild(c2);
+
+  const back=$(`<button class="ghost">← 처음으로</button>`); back.onclick=screenHome;
+  w.appendChild(back);
+  add(w);
+}
+
+function genCode(){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++) s+=A[(Math.random()*A.length)|0]; return s; }
+
+function netError(msg){
+  leaveRoom();
+  clearApp();
+  const c=$(`<div class="card fade center"></div>`);
+  c.appendChild($(`<div class="eyebrow" style="color:var(--crimson)">연결 오류</div>`));
+  c.appendChild($(`<p>${escapeHtml(msg)}</p>`));
+  add(c);
+  const b=$(`<button class="amber">돌아가기</button>`); b.onclick=screenOnlineMenu; add(b);
+}
+
+async function connectRoom(code, asHost, myName){
+  clearApp();
+  add($(`<div class="card fade center"><div class="eyebrow">연결 중</div><h2>${asHost?'방을 여는 중…':'방에 들어가는 중…'}</h2><p class="muted small">방 코드 <b style="font-family:var(--mono);letter-spacing:.2em">${code}</b></p><p class="muted small">잠시만요 (보통 2~5초)</p></div>`));
+
+  let mod=null, lastErr=null;
+  // 로컬 vendor 우선 → 실패 시 CDN 폴백
+  const cdns=[
+    './vendor/trystero-nostr.js',
+    'https://esm.sh/trystero@0.20.1/nostr',
+    'https://esm.sh/trystero@0.20.1/nostr?bundle',
+    'https://cdn.jsdelivr.net/npm/trystero@0.20.1/nostr/+esm'
+  ];
+  // P2P 신호용 릴레이: 두 기기가 반드시 같은 릴레이들에 모두 붙어야 서로를 찾음
+  const TRY_RELAYS=[
+    'wss://relay.damus.io',
+    'wss://nos.lol',
+    'wss://relay.primal.net',
+    'wss://relay.nostr.band'
+  ];
+  for(const url of cdns){
+    try{
+      const m = await import(url);
+      if(!m || !m.joinRoom) continue;
+      const r = m.joinRoom({appId:'hanbam-mafia-jsy-v1-test', relayUrls:TRY_RELAYS, relayRedundancy:TRY_RELAYS.length}, 'HM-probe-'+code);
+      const ok = r && typeof r.makeAction==='function';
+      try{ r.leave(); }catch(e){}
+      if(ok){ mod=m; break; }
+    }catch(e){ lastErr=e; }
+  }
+  if(!mod){
+    const fileHint=(location.protocol==='file:'||location.protocol==='content:')
+      ? ' 다운로드 파일을 직접 여는 방식(content://)입니다 — 웹(GitHub Pages 등 https)에 올린 뒤 접속하면 안정적입니다.'
+      : ' 사용 중인 네트워크가 esm.sh/jsdelivr 접속을 막고 있을 수 있어요. vendor 폴더에 라이브러리를 동봉하면 오프라인에서도 동작합니다.';
+    return netError('호환되는 네트워크 모듈을 찾지 못했습니다.'+fileHint+(lastErr?(' [상세: '+(lastErr.message||lastErr)+']'):''));
+  }
+
+  let room;
+  try{ room = mod.joinRoom({appId:'hanbam-mafia-jsy-v1', relayUrls:TRY_RELAYS, relayRedundancy:TRY_RELAYS.length}, 'HM-'+code); }
+  catch(e){ return netError('방 연결에 실패했습니다. [상세: '+(e&&e.message||e)+']'); }
+
+  const mkAction=(name)=>{
+    const r=room.makeAction(name);
+    const fns=Array.isArray(r) ? r.filter(x=>typeof x==='function')
+            : (r && typeof r==='object') ? Object.values(r).filter(x=>typeof x==='function')
+            : (typeof r==='function' ? [r] : []);
+    return [ fns[0]||(()=>{}), fns[1]||(()=>{}) ];
+  };
+  const [sendScene,getScene]=mkAction('scene');
+  const [sendInput,getInput]=mkAction('input');
+  const [sendJoin ,getJoin ]=mkAction('join');
+  const [sendChat ,getChat ]=mkAction('chat');
+  const [sendStatus,getStatus]=mkAction('stat');
+  const [sendGest ,getGest ]=mkAction('gest');
+
+  NET={ room, code, isHost:asHost, selfId:mod.selfId||room.selfId, myName, hostId:null,
+        send:{scene:sendScene, input:sendInput, join:sendJoin, chat:sendChat, status:sendStatus, gesture:sendGest} };
+
+  getScene((data,peerId)=>{ if(!NET.isHost){ if(peerId) NET.hostId=peerId; try{ renderScene(data); }catch(e){ showErr(e.message); } } });
+  getInput((data,peerId)=>{ if(NET.isHost) try{ hostInput(peerId,data); }catch(e){ showErr(e.message); } });
+  getJoin ((data,peerId)=>{ if(NET.isHost) hostJoin(peerId, data&&data.name); });
+  getChat ((data,peerId)=>{ try{ if(NET.isHost) hostChat(peerId, data&&data.text, data&&data.to); else chatShow(data); }catch(e){} });
+  getStatus((data)=>{ if(!NET.isHost) try{ applyStatus(data); }catch(e){} });
+  getGest ((data,peerId)=>{ try{ if(NET.isHost) hostGesture(peerId, data); else showSeatGesture(data&&data.seat, data&&data.kind); }catch(e){} });
+  try{ chatInit(); }catch(e){}
+
+  const hasFn=(o,k)=>o&&typeof o[k]==='function';
+  if(asHost){
+    ROSTER=[{peerId:NET.selfId, name:myName}];
+    lobbyJester=false;
+    if(hasFn(room,'onPeerLeave')) room.onPeerLeave(peerId=>hostPeerLeft(peerId));
+    rebroadcastLobby();
+  }else{
+    const announce=()=>{ try{ NET.send.join({name:myName}); }catch(e){} };
+    if(hasFn(room,'onPeerJoin')) room.onPeerJoin(()=>announce());
+    if(hasFn(room,'onPeerLeave')) room.onPeerLeave(()=>{
+      try{ if(hasFn(room,'getPeers') && Object.keys(room.getPeers()).length===0) clientHostLost(); }catch(e){}
+    });
+    setTimeout(announce, 400);
+    setTimeout(announce, 1500);
+    let tries=0; const iv=setInterval(()=>{ announce(); if(++tries>=8||!NET) clearInterval(iv); }, 1200);
+    setTimeout(()=>{
+      if(NET && !NET.isHost && !O && !NET.hostId){
+        showErr('호스트를 찾지 못했어요. 같은 코드인지, 호스트가 방을 연 채 기다리는지 확인하세요. 회사·학교 와이파이는 P2P 신호 서버를 막을 수 있어요(다른 망/데이터로 시도).');
+      }
+    }, 14000);
+  }
+}
+
+function leaveRoom(){
+  if(discTick){ clearInterval(discTick); discTick=null; }
+  if(O&&O._discTimer){ clearTimeout(O._discTimer); }
+  if(O&&O._secTimer){ clearTimeout(O._secTimer); }
+  try{ chatDestroy(); }catch(e){}
+  try{ livesHide(); }catch(e){}
+  try{ NET&&NET.room&&NET.room.leave(); }catch(e){}
+  NET=null; O=null; ROSTER=[]; myRoster=[]; myId=-1; myLives=0;
+}
+function clientHostLost(){
+  clearApp();
+  const c=$(`<div class="card fade center"></div>`);
+  c.appendChild($(`<div class="eyebrow" style="color:var(--crimson)">연결 끊김</div>`));
+  c.appendChild($(`<h2>호스트와 연결이 끊겼습니다</h2>`));
+  c.appendChild($(`<p class="muted">방이 닫혔거나 호스트가 나갔습니다.</p>`));
+  add(c);
+  const b=$(`<button class="amber">메뉴로</button>`); b.onclick=()=>{ leaveRoom(); screenOnlineMenu(); }; add(b);
+}
+
+/* ════════════════ 호스트: 로비 ════════════════ */
+function hostJoin(peerId, nm){
+  if(O){
+    if(idxByPeer(peerId)>=0) return;   // 이미 이번 판 참가자 → 중복 announce 무시(게임 화면 유지)
+    NET.send.scene({kind:'wait', title:'게임 진행 중', sub:'이미 시작된 게임입니다. 다음 판을 기다려 주세요.'}, peerId); return;
+  }
+  if(ROSTER.length>=8 && !ROSTER.find(r=>r.peerId===peerId)){ NET.send.scene({kind:'wait', title:'정원 초과', sub:'방이 가득 찼습니다 (최대 8명).'}, peerId); return; }
+  const ex=ROSTER.find(r=>r.peerId===peerId);
+  if(ex) ex.name=(nm||ex.name).slice(0,10);
+  else ROSTER.push({peerId, name:(nm||'게스트').slice(0,10)});
+  rebroadcastLobby();
+}
+function hostPeerLeft(peerId){
+  if(!O){ ROSTER=ROSTER.filter(r=>r.peerId!==peerId); rebroadcastLobby(); return; }
+  const i=O.players.findIndex(p=>p.peerId===peerId);
+  if(i>=0 && O.players[i].alive){
+    O.players[i].alive=false; O.players[i].deathCause='left';
+    O.log.push({t:'dead', s:`${O.players[i].name} 님이 게임을 떠났습니다.`});
+    if(O.pending) O.pending.delete(i);
+  }
+  recheckAfterChange();
+}
+function rebroadcastLobby(){
+  const players=ROSTER.map(r=>({name:r.name, isHost:r.peerId===NET.selfId, bot:!!r.bot}));
+  const scene={kind:'lobby', code:NET.code, players, canStart:ROSTER.length>=2, jester:lobbyJester};
+  NET.send.scene(scene);
+  renderScene(scene);
+}
+
+/* ════════════════ 호스트: 권위 헬퍼 ════════════════ */
+const oAlive=()=>O.players.filter(p=>p.alive);
+const oAliveExcept=id=>oAlive().filter(p=>p.id!==id);
+function oCheckWin(){
+  const j=O.players.find(p=>p.role.faction==='neutral' && !p.alive && p.deathCause==='vote');
+  if(j) return {who:'jester', label:'광대 단독 승리', color:'var(--neutral)'};
+  const m=oAlive().filter(p=>p.role.faction==='mafia').length;
+  const c=oAlive().filter(p=>p.role.faction==='citizen').length;
+  if(m===0) return {who:'citizen', label:'시민 진영 승리', color:'var(--sage)'};
+  if(m>=c)  return {who:'mafia', label:'마피아 진영 승리', color:'var(--crimson)'};
+  return null;
+}
+function idxByPeer(peerId){ return O.players.findIndex(p=>p.peerId===peerId); }
+function oEmit(i, scene){ const p=O.players[i]; if(!p||p.bot) return; if(scene && typeof scene==='object') scene.you=i; if(p.peerId===NET.selfId) renderScene(scene); else NET.send.scene(scene, p.peerId); }
+function oBroadcast(scene){ NET.send.scene(scene); renderScene(scene); }
+function seatPayload(revealAll){
+  return O.players.map(p=>({name:p.name, alive:p.alive, color:p.role.color, roleName:p.role.name,
+    revealed: !!(p.revealed||revealAll)}));
+}
+function onlineSpread(n, jester){
+  const ids=[]; const maf=n>=6?2:1;
+  for(let i=0;i<maf;i++) ids.push('mafia');
+  if(n>=4) ids.push('doctor');
+  if(n>=5) ids.push('detective');
+  while(ids.length<n) ids.push('citizen');
+  if(jester && n>=5){ const i=ids.lastIndexOf('citizen'); if(i>=0) ids[i]='jester'; }
+  return shuffle(ids);
+}
+
+/* ════════════════ AI 봇 (호스트에서만 사고) ════════════════ */
+let BOT_SEQ=0;
+const BOT_NAMES=['지우','서연','하준','민준','도윤','수아','지호','예린','시우','유나'];
+const BOT_LINES=['음… 누가 수상하지?','난 잘 모르겠는데','조용한 사람이 의심돼','일단 좀 더 지켜보자','근거가 약한 것 같아','내 생각엔 아닌 듯','이번 판 어렵네','슬슬 투표 넘길까?'];
+function botRand(a){ return a.length? a[Math.floor(Math.random()*a.length)] : null; }
+function botName(){
+  const used=new Set(ROSTER.map(r=>r.name));
+  const pool=BOT_NAMES.filter(n=>!used.has('AI '+n));
+  const base=pool.length? botRand(pool) : ('봇'+(BOT_SEQ+1));
+  return ('AI '+base).slice(0,10);
+}
+function addBot(){
+  if(!NET||!NET.isHost||O) return;
+  if(ROSTER.length>=8) return;
+  ROSTER.push({peerId:'bot#'+(++BOT_SEQ), name:botName(), bot:true});
+  rebroadcastLobby();
+}
+function removeBot(){
+  if(!NET||!NET.isHost||O) return;
+  for(let i=ROSTER.length-1;i>=0;i--){ if(ROSTER[i].bot){ ROSTER.splice(i,1); break; } }
+  rebroadcastLobby();
+}
+/* ---- 봇 추론 헬퍼 ---- */
+function botMates(i){ // 같은 마피아 진영(자신 제외)
+  return O.players.filter(q=>q.role.faction==='mafia' && q.id!==i);
+}
+function botMateIds(i){ return new Set(botMates(i).map(q=>q.id)); }
+function susScore(i, voterId){
+  // voterId 입장에서 i가 마피아일 의심도 (높을수록 의심)
+  const ix=O.intel, p=O.players[i];
+  let s = (ix.suspicion[i]||0);
+  // 공개되어 '확정 무고'로 드러난 역할(생존 공개)은 의심도 대폭 하락
+  if(p.revealed && p.role.faction!=='mafia') s-=6;
+  if(p.revealed && p.role.faction==='mafia') s+=10;
+  // 토론에서 조용한 사람(채팅 적음)을 약하게 의심
+  const cc=ix.chatCount[i]||0; if(cc===0) s+=0.6;
+  return s;
+}
+function bumpSus(id, d){ if(id==null) return; const ix=O.intel; ix.suspicion[id]=(ix.suspicion[id]||0)+d; }
+
+function botNightTarget(i){
+  const p=O.players[i], alive=oAlive(), others=alive.filter(q=>q.id!==i);
+  if(!others.length) return null;
+  if(p.role.ability==='kill'){
+    const mates=botMateIds(i);
+    // 동료 마피아는 절대 제외
+    let prey=others.filter(q=>q.role.faction!=='mafia' && !mates.has(q.id));
+    if(!prey.length) prey=others.filter(q=>!mates.has(q.id));
+    if(!prey.length) prey=others;
+    // 1순위: 우리를 의심하는 위협(탐정/공개된 시민) — 의심도 높은 시민 우선 제거
+    prey.sort((a,b)=>{
+      const ta=(a.role.id==='detective'?3:0)+(a.revealed?2:0)+(O.intel.suspicion[a.id]||0)*0; 
+      const tb=(b.role.id==='detective'?3:0)+(b.revealed?2:0);
+      return tb-ta;
+    });
+    // 위협 후보가 여럿이면 약간 무작위성 부여(읽히지 않도록)
+    const topThreat = prey.filter(q=>q.role.id==='detective'||q.revealed);
+    if(topThreat.length && Math.random()<0.7) return botRand(topThreat).id;
+    return botRand(prey.slice(0, Math.min(3,prey.length))).id;
+  }
+  if(p.role.ability==='protect'){
+    p._mem=p._mem||{}; 
+    // 직전에 공격받아 다친(목숨 잃은) 사람을 우선 보호
+    const wounded=alive.filter(q=>q.lives<2 && q.alive);
+    if(wounded.length && Math.random()<0.6) return botRand(wounded).id;
+    // 가끔 자기 보호(연속 자기보호는 지양)
+    if(Math.random()<0.3 && p._mem.lastProtect!==p.id){ p._mem.lastProtect=p.id; return p.id; }
+    // 그 외엔 신뢰가는(의심 낮은=시민으로 보이는) 사람 보호
+    const cand=alive.slice().sort((a,b)=>(O.intel.suspicion[a.id]||0)-(O.intel.suspicion[b.id]||0));
+    const t=botRand(cand.slice(0,Math.min(3,cand.length))); p._mem.lastProtect=t?t.id:null; return t?t.id:null;
+  }
+  if(p.role.ability==='investigate'){
+    p._mem=p._mem||{mafia:[],safe:[],checked:[]};
+    const checked=new Set(p._mem.checked||[]);
+    // 아직 조사 안 한 사람 우선, 그 중 의심도 높은 순
+    let pool=others.filter(q=>!checked.has(q.id));
+    if(!pool.length) pool=others;
+    pool.sort((a,b)=>(O.intel.suspicion[b.id]||0)-(O.intel.suspicion[a.id]||0));
+    const t=botRand(pool.slice(0,Math.min(2,pool.length)));
+    return t?t.id:null;
+  }
+  return null;
+}
+function botVoteTarget(i){
+  const p=O.players[i], alive=oAlive(), others=alive.filter(q=>q.id!==i);
+  if(!others.length) return null;
+  const mates=botMateIds(i);
+
+  if(p.role.faction==='mafia'){
+    // 동료는 절대 안 찍음. 동료가 처형 위협(최다 의심)이면 분산용으로 무고 시민 지목
+    const town=others.filter(q=>q.role.faction!=='mafia');
+    const pool=town.length?town:others.filter(q=>!mates.has(q.id));
+    if(!pool.length) return null;
+    // 이미 공개된 시민(무고 확정)보다, 위협되는 시민(탐정/의심 적은 진짜 시민)을 우선 제거
+    pool.sort((a,b)=>{
+      const ta=(a.role.id==='detective'?2:0) - (a.revealed?3:0) + Math.random();
+      const tb=(b.role.id==='detective'?2:0) - (b.revealed?3:0) + Math.random();
+      return tb-ta;
+    });
+    return pool[0].id;
+  }
+
+  // 탐정: 조사로 확인된 마피아가 생존 중이면 확정 투표
+  if(p.role.ability==='investigate' && p._mem){
+    const conf=(p._mem.mafia||[]).filter(id=>alive.some(a=>a.id===id&&a.id!==i));
+    if(conf.length) return botRand(conf);
+    // 확인된 무고는 회피하고 나머지 중 의심도 높은 사람
+    const safe=new Set(p._mem.safe||[]);
+    const cand=others.filter(q=>!safe.has(q.id));
+    if(cand.length){ cand.sort((a,b)=>(O.intel.suspicion[b.id]||0)-(O.intel.suspicion[a.id]||0)); 
+      if((O.intel.suspicion[cand[0].id]||0)>0.5) return cand[0].id; }
+  }
+
+  // 일반 시민: 의심도 기반 투표 (자기 자신 제외)
+  const ranked=others.slice().sort((a,b)=>susScore(b.id,i)-susScore(a.id,i));
+  const top=ranked[0];
+  // 의심 근거가 충분하면 최다 의심자에게, 아니면 기권 확률 높임
+  if(top && susScore(top.id,i)>0.8) return top.id;
+  if(Math.random()<0.45) return null; // 근거 약하면 기권
+  // 약한 근거: 상위 의심자 중 무작위
+  return botRand(ranked.slice(0,Math.min(2,ranked.length))).id;
+}
+function scheduleBots(phase){
+  if(!O) return;
+  O.players.forEach(p=>{
+    if(!p.bot) return;
+    if(phase==='role'){
+      if(O.pending&&O.pending.has(p.id)) setTimeout(()=>{ if(O&&O.phase==='role'&&O.pending.has(p.id)) hostInput(p.peerId,{t:'ack'}); }, 500+Math.random()*1200);
+    }else if(phase==='night'){
+      if(p.alive&&p.role.night&&O.pending&&O.pending.has(p.id)) setTimeout(()=>{
+        if(!O||O.phase!=='night'||!O.pending.has(p.id)) return;
+        const tgt=botNightTarget(p.id);
+        if(p.role.ability==='investigate' && tgt!=null){
+          const t=O.players[tgt]; p._mem=p._mem||{mafia:[],safe:[],checked:[]};
+          if(!p._mem.checked.includes(tgt)) p._mem.checked.push(tgt);
+          if(t.role.faction==='mafia'){ if(!p._mem.mafia.includes(tgt)) p._mem.mafia.push(tgt); bumpSus(tgt, 4); }
+          else { if(!p._mem.safe.includes(tgt)) p._mem.safe.push(tgt); }
+          hostInput(p.peerId,{t:'night',target:tgt});
+          hostInput(p.peerId,{t:'ack'});
+        }else hostInput(p.peerId,{t:'night',target:tgt});
+      }, 700+Math.random()*2200);
+    }else if(phase==='vote'){
+      if(p.alive&&O.pending&&O.pending.has(p.id)) setTimeout(()=>{ if(O&&O.phase==='vote'&&O.pending.has(p.id)) hostInput(p.peerId,{t:'vote',target:botVoteTarget(p.id)}); }, 900+Math.random()*2600);
+    }else if(phase==='disc'){
+      if(!p.alive) return;
+      const speak=()=>{
+        if(!O||O.phase!=='discussion') return;
+        let line=botRand(BOT_LINES);
+        // 의심 대상을 거명하는 발언(2일차+ 또는 단서가 쌓였을 때)
+        const targetId=botVoteTarget(p.id);
+        if(targetId!=null && O.players[targetId] && O.players[targetId].alive && Math.random()<0.55){
+          const nm=O.players[targetId].name;
+          const accuse=[`${nm} 님 좀 수상하지 않아?`,`난 ${nm} 의심돼`,`${nm} 한테 한 표 줄까 생각 중`,`${nm} 행동이 걸리는데`];
+          line=botRand(accuse);
+        }
+        hostChat(p.peerId, line, null);
+      };
+      if(Math.random()<0.8) setTimeout(speak, 1500+Math.random()*8000);
+      if(Math.random()<0.4) setTimeout(speak, 9000+Math.random()*7000); // 가끔 두 번 발언
+      setTimeout(()=>{ if(O&&O.phase==='discussion') hostInput(p.peerId,{t:'skip'}); }, 12000+Math.random()*12000);
+    }
+  });
+}
+
+/* ════════════════ 호스트: 게임 진행 ════════════════ */
+function oStartGame(){
+  if(ROSTER.length<2) return;
+  const n=ROSTER.length;
+  const ids=onlineSpread(n, lobbyJester);
+  O={ players:ROSTER.map((r,i)=>({id:i, peerId:r.peerId, name:r.name, role:ROLES[ids[i]], alive:true, lives:2, revealed:false, deathCause:null, bot:!!r.bot, _mem:null})),
+      round:1, log:[{t:'sys', s:`${n}명에게 2개의 목숨과 역할이 분배되었습니다.`}],
+      phase:'', nightActions:[], votes:{}, notes:[], pending:new Set(), _win:null, _discTimer:null, _secTimer:null, _ackTimer:null,
+      intel:{ suspicion:{}, lastVotes:{}, chatCount:{}, revealedSafe:new Set() } };
+  oRoleReveal();
+}
+function oRoleReveal(){
+  O.phase='role';
+  O.pending=new Set(O.players.map(p=>p.id));
+  oStatusAll();
+  O.players.forEach(p=>oEmit(p.id, {kind:'role', roleName:p.role.name, color:p.role.color, faction:p.role.faction, desc:p.role.desc}));
+  scheduleBots('role');
+  armAck(20000);   // 누군가 역할 확인을 안 눌러 멈추면 자동 진행
+}
+function armAck(ms){
+  if(!O) return;
+  if(O._ackTimer){ clearTimeout(O._ackTimer); O._ackTimer=null; }
+  const ph=O.phase;
+  O._ackTimer=setTimeout(()=>{ if(O && O.phase===ph && O.pending && O.pending.size>0) oForce(); }, ms);
+}
+function oNight(){
+  O.phase='night'; O.nightActions=[];
+  const actors=oAlive().filter(p=>p.role.night);
+  O.pending=new Set(actors.map(p=>p.id));
+  oStatusAll();
+  O.players.forEach(p=>{
+    if(!p.alive){ oEmit(p.id,{kind:'wait', title:'밤', sub:'당신은 탈락했습니다. 결과를 지켜보세요.', hostForce:true}); return; }
+    if(p.role.night){
+      const verb=p.role.ability==='kill'?'살해할 대상':p.role.ability==='protect'?'보호할 대상':'조사할 대상';
+      oEmit(p.id,{kind:'night', roleName:p.role.name, color:p.role.color, verb, targets:oAliveExcept(p.id).map(t=>({id:t.id, name:t.name}))});
+    }else{
+      oEmit(p.id,{kind:'wait', title:'밤이 깊었습니다', sub:'능력자들이 조용히 움직이고 있습니다…', hostForce:true});
+    }
+  });
+  if(!O.pending.size) oMorning();
+  else { scheduleBots('night'); armAck(120000); }
+}
+function oMorning(){
+  O.phase='morning';
+  const prot=new Set(O.nightActions.filter(a=>a.type==='protect').map(a=>a.target));
+  const deaths=[]; const wounded=[];
+  O.nightActions.filter(a=>a.type==='kill').forEach(a=>{
+    if(a.target==null||prot.has(a.target)) return;
+    const v=O.players[a.target];
+    if(v&&v.alive){
+      v.lives-=1;
+      if(v.lives<=0){ v.alive=false; v.deathCause='night'; if(!deaths.includes(v)) deaths.push(v); }
+      else if(!wounded.includes(v)) wounded.push(v);
+    }
+  });
+  if(!deaths.length) O.log.push({t:'sys', s:`${O.round}일차 아침 — 쓰러진 사람은 없습니다.`});
+  else deaths.forEach(v=>O.log.push({t:'dead', s:`${v.name} 님이 밤사이 쓰러졌습니다.`}));
+  oStatusAll();
+  wounded.forEach(v=>oStatus(v.id, '밤사이 공격을 받아 목숨을 잃었습니다. (공격자는 알 수 없습니다)'));
+  deaths.forEach(v=>oStatus(v.id, '치명상을 입어 쓰러졌습니다.'));
+  const w=oCheckWin(); if(w) return oGameover(w);
+  oBroadcast({kind:'morning', round:O.round, deaths:deaths.map(v=>v.name), seats:seatPayload()});
+  if(O._mTimer) clearTimeout(O._mTimer);
+  O._mTimer=setTimeout(()=>{ if(O&&O.phase==='morning') oDiscussion(); }, 6500);
+}
+function oDiscussion(){
+  if(O.phase==='discussion') return;
+  O.phase='discussion';
+  const endsAt=Date.now()+180000;
+  O._discEndsAt=endsAt; O.skip=new Set();
+  oBroadcast({kind:'disc', round:O.round, endsAt});
+  if(O._discTimer) clearTimeout(O._discTimer);
+  O._discTimer=setTimeout(()=>{ if(O&&O.phase==='discussion') oVote(); }, 180000);
+  scheduleBots('disc');
+}
+function oVote(){
+  if(O._discTimer){ clearTimeout(O._discTimer); O._discTimer=null; }
+  O.phase='vote'; O.votes={};
+  O.pending=new Set(oAlive().map(p=>p.id));
+  oStatusAll();
+  O.players.forEach(p=>{
+    if(!p.alive){ oEmit(p.id,{kind:'wait', title:'투표', sub:'탈락자는 투표할 수 없습니다.', hostForce:true}); return; }
+    oEmit(p.id,{kind:'vote', targets:oAliveExcept(p.id).map(t=>({id:t.id, name:t.name, revealed:t.revealed, roleName:t.role.name}))});
+  });
+  if(!O.pending.size) oPunish();
+  else { scheduleBots('vote'); armAck(120000); }
+}
+function oPunish(){
+  O.phase='punish';
+  const counts={};
+  Object.values(O.votes).forEach(t=>{ if(t!=null) counts[t]=(counts[t]||0)+1; });
+  let max=0, top=null, tie=false;
+  Object.entries(counts).forEach(([id,n])=>{ if(n>max){max=n; top=+id; tie=false;} else if(n===max){ tie=true; } });
+  // 봇 추론: 표를 받은 만큼 약하게 의심 누적, 기록
+  if(O.intel){
+    Object.entries(counts).forEach(([id,n])=>{ bumpSus(+id, n*0.4); });
+    O.intel.lastVotes=Object.assign({}, O.votes);
+  }
+  let text;
+  if(top===null||tie){
+    text=(top===null?'유효한 표가 없습니다.':'최다 득표가 동점입니다.')+' 이번엔 아무도 지목되지 않습니다.';
+    O.log.push({t:'sys', s:'투표 동점/무효 — 지목 없음.'});
+    oStatusAll();
+  }else{
+    const p=O.players[top];
+    p.lives-=1;
+    if(p.lives<=0){
+      p.alive=false; p.deathCause='vote';
+      text=`${p.name} 님이 최다 득표(${max}표)로 지목되어 쓰러졌습니다.`;
+      O.log.push({t:'dead', s:`${p.name} 님이 투표로 쓰러졌습니다.`});
+    }else{
+      text=`${p.name} 님이 최다 득표(${max}표)로 지목되었습니다. 하지만 쓰러지지 않았습니다.`;
+      O.log.push({t:'sys', s:`${p.name} 님이 투표로 지목되었습니다.`});
+    }
+    oStatusAll();
+    oStatus(top, p.lives<=0 ? '투표로 지목되어 쓰러졌습니다.' : '투표로 지목되어 목숨을 잃었습니다.');
+    // 봇 추론: 처형 대상의 정체가 드러나면(쓰러져 역할 노출) 투표 행태를 사후 평가
+    if(O.intel && p.alive===false){
+      const wasMafia = p.role.faction==='mafia';
+      Object.entries(O.votes).forEach(([voter,tgt])=>{
+        const vid=+voter;
+        if(tgt===top){ bumpSus(vid, wasMafia ? -2.5 : +1.5); }      // 정확히 찍었으면 신뢰, 무고 몰면 의심
+        else if(wasMafia && tgt==null){ bumpSus(vid, +0.8); }       // 마피아인데 기권한 사람 약하게 의심
+      });
+      if(wasMafia){ O.intel.suspicion[top]=0; } // 이미 제거됨
+    }
+  }
+  const w=oCheckWin(); O._win=w;
+  oBroadcast({kind:'punish', round:O.round, text, seats:seatPayload(), win:!!w});
+  if(!w){ if(O._pTimer) clearTimeout(O._pTimer); O._pTimer=setTimeout(()=>{ if(O&&O.phase==='punish') oSecret(); }, 6500); }
+}
+function oSecret(){
+  if(O.phase==='secret') return;
+  O.phase='secret';
+  oStatusAll();
+  const endsAt=Date.now()+45000;
+  oBroadcast({kind:'secret', round:O.round, endsAt});
+  if(O._secTimer) clearTimeout(O._secTimer);
+  O._secTimer=setTimeout(()=>{ if(O&&O.phase==='secret') oAfterSecret(); }, 45000);
+}
+function oAfterSecret(){ if(O._secTimer){ clearTimeout(O._secTimer); O._secTimer=null; }
+  if(O.intel){ Object.keys(O.intel.suspicion).forEach(k=>{ O.intel.suspicion[k]*=0.7; }); O.intel.chatCount={}; }
+  O.round++; oNight(); }
+function oGameover(w){
+  O.phase='over';
+  if(O._discTimer){ clearTimeout(O._discTimer); O._discTimer=null; }
+  if(O._mTimer){ clearTimeout(O._mTimer); O._mTimer=null; }
+  if(O._pTimer){ clearTimeout(O._pTimer); O._pTimer=null; }
+  if(O._secTimer){ clearTimeout(O._secTimer); O._secTimer=null; }
+  if(O._ackTimer){ clearTimeout(O._ackTimer); O._ackTimer=null; }
+  oBroadcast({kind:'over', label:w.label, color:w.color,
+    reveal:O.players.map(p=>({name:p.name, roleName:p.role.name, color:p.role.color,
+      state: p.alive?'생존':(p.deathCause==='vote'?'처형':p.deathCause==='left'?'이탈':'사망')})),
+    log:O.log.map(l=>({t:l.t, s:l.s}))});
+}
+function oReturnLobby(){
+  if(O){ ['_discTimer','_mTimer','_pTimer','_secTimer','_ackTimer'].forEach(k=>{ if(O[k]){ clearTimeout(O[k]); O[k]=null; } }); }
+  O=null;
+  rebroadcastLobby();
+}
+
+/* ---------- 호스트: 입력 처리 ---------- */
+function hostInput(peerId, data){
+  if(!O||!data) return;
+  const i=idxByPeer(peerId); if(i<0) return;
+  const p=O.players[i];
+  switch(O.phase){
+    case 'role':
+      if(data.t==='ack' && O.pending.has(i)){ O.pending.delete(i); if(!O.pending.size) oNight(); }
+      break;
+    case 'night':
+      if(!p.alive) break;
+      if(data.t==='night' && O.pending.has(i)){
+        if(data.target!=null) O.nightActions.push({actor:i, type:p.role.ability, target:data.target});
+        if(p.role.ability==='investigate' && data.target!=null){
+          const t=O.players[data.target];
+          oEmit(i,{kind:'invest', name:t.name, isMafia:t.role.faction==='mafia'});
+        }else{
+          O.pending.delete(i);
+          oEmit(i,{kind:'wait', title:'밤', sub:'선택을 마쳤습니다. 다른 사람을 기다립니다…', hostForce:true});
+          if(!O.pending.size) oMorning();
+        }
+      }else if(data.t==='ack' && O.pending.has(i)){
+        O.pending.delete(i);
+        oEmit(i,{kind:'wait', title:'밤', sub:'선택을 마쳤습니다. 다른 사람을 기다립니다…', hostForce:true});
+        if(!O.pending.size) oMorning();
+      }
+      break;
+    case 'vote':
+      if(data.t==='vote' && O.pending.has(i)){
+        O.votes[i]=(data.target==null?null:data.target);
+        O.pending.delete(i);
+        oEmit(i,{kind:'wait', title:'투표', sub:'투표 완료. 결과를 기다립니다…', hostForce:true});
+        if(!O.pending.size) oPunish();
+      }
+      break;
+    case 'discussion':
+      if(data.t==='skip' && p.alive){
+        if(!O.skip) O.skip=new Set();
+        if(O.skip.has(i)) O.skip.delete(i); else O.skip.add(i);
+        const need=Math.floor(oAlive().length/2)+1;
+        if(O.skip.size>=need) oVote();
+        else oBroadcast({kind:'discskip', have:O.skip.size, need});
+      }
+      break;
+  }
+}
+function oForce(){
+  if(!O) return;
+  switch(O.phase){
+    case 'role': O.pending.clear(); oNight(); break;
+    case 'night': O.pending.clear(); oMorning(); break;
+    case 'vote': O.pending.clear(); oPunish(); break;
+    case 'secret': oAfterSecret(); break;
+  }
+}
+function recheckAfterChange(){
+  if(!O) return;
+  const w=oCheckWin(); if(w && O.phase!=='over') return oGameover(w);
+  if(!O.pending || O.pending.size!==0) return;
+  if(O.phase==='role') oNight();
+  else if(O.phase==='night') oMorning();
+  else if(O.phase==='vote') oPunish();
+}
+
+/* ---------- 입력 전송 (호스트는 직접 호출) ---------- */
+function sendInput(data){ if(!NET) return; if(NET.isHost) hostInput(NET.selfId, data); else { try{ NET.send.input(data); }catch(e){} } }
+
+/* ════════════════ 렌더 (호스트·클라이언트 공통) ════════════════ */
+function sceneSeats(seats){
+  const list=$(`<div class="seatlist"></div>`);
+  (seats||[]).forEach(p=>{
+    const seat=$(`<div class="seat ${p.alive?'':'dead'}"><div class="dot"></div>
+      <div class="grow">${escapeHtml(p.name)}</div>
+      ${p.revealed?`<div class="tag" style="color:${p.color}">${p.roleName}</div>`:`<div class="tag muted">?</div>`}</div>`);
+    list.appendChild(seat);
+  });
+  return list;
+}
+function localWait(title, sub){
+  clearApp();
+  const c=$(`<div class="card fade center"></div>`);
+  c.appendChild($(`<div class="eyebrow">대기</div>`));
+  c.appendChild($(`<h2>${escapeHtml(title)}</h2>`));
+  if(sub) c.appendChild($(`<p class="muted">${escapeHtml(sub)}</p>`));
+  add(c);
+}
+function forceBtnIfHost(scene){
+  if(NET&&NET.isHost && scene.hostForce){
+    const f=$(`<button class="ghost">기다리지 않고 진행 ▸</button>`);
+    f.onclick=oForce; add(f);
+  }
+}
+
+function phaseBarLabel(s){
+  if(!s) return '';
+  const r=s.round?`${s.round}일차 · `:'';
+  switch(s.kind){
+    case 'role': return '역할 확인';
+    case 'night': return '밤';
+    case 'morning': return r+'아침';
+    case 'disc': return r+'토론';
+    case 'vote': return '투표';
+    case 'punish': return r+'처벌';
+    case 'secret': return r+'비밀 대화';
+    default: return '';
+  }
+}
+function setPhaseBar(label, endsAt){
+  let bar=document.getElementById('phasebar');
+  if(!bar){
+    bar=document.createElement('div'); bar.id='phasebar';
+    Object.assign(bar.style,{position:'fixed',top:'8px',left:'50%',transform:'translateX(-50%)',
+      zIndex:'80',padding:'5px 12px',borderRadius:'999px',background:'rgba(8,9,14,.72)',
+      border:'1px solid var(--line)',color:'var(--bone)',font:'600 12px var(--mono)',
+      letterSpacing:'.14em',whiteSpace:'nowrap',pointerEvents:'none',backdropFilter:'blur(6px)'});
+    document.body.appendChild(bar);
+  }
+  if(bar._tick){ clearInterval(bar._tick); bar._tick=null; }
+  if(!label){ bar.style.display='none'; return; }
+  bar.style.display='block';
+  const draw=()=>{
+    let suf='';
+    if(endsAt){ const left=Math.max(0,Math.round((endsAt-Date.now())/1000)); suf=` · ${(left/60|0)}:${String(left%60).padStart(2,'0')}`; if(left<=0&&bar._tick){ clearInterval(bar._tick); bar._tick=null; } }
+    bar.textContent=label+suf;
+  };
+  draw(); if(endsAt) bar._tick=setInterval(draw,500);
+}
+
+function setSkipFloat(on){
+  let el=document.getElementById('skipfloat');
+  if(!el){
+    el=document.createElement('div'); el.id='skipfloat';
+    Object.assign(el.style,{position:'fixed',left:'50%',bottom:'14px',transform:'translateX(-50%)',
+      zIndex:'75',display:'none',flexDirection:'column',alignItems:'center',gap:'5px'});
+    const b=document.createElement('button'); b.id='skipbtn'; b.className='amber'; b.textContent='스킵 찬성';
+    Object.assign(b.style,{width:'auto',padding:'9px 20px',fontSize:'13px',borderRadius:'999px',boxShadow:'0 6px 18px rgba(0,0,0,.45)'});
+    b.onclick=()=>{ b._on=!b._on; b.textContent=b._on?'스킵 취소':'스킵 찬성'; try{ sendInput({t:'skip'}); }catch(e){} };
+    const info=document.createElement('div'); info.id='skipinfo';
+    Object.assign(info.style,{font:'600 11px var(--mono)',color:'var(--bone)',letterSpacing:'.04em',
+      background:'rgba(8,9,14,.66)',padding:'3px 9px',borderRadius:'999px',backdropFilter:'blur(6px)'});
+    info.textContent='과반수 스킵 시 바로 투표';
+    el.appendChild(b); el.appendChild(info); document.body.appendChild(el);
+  }
+  if(on){ const b=el.querySelector('#skipbtn'); b._on=false; b.textContent='스킵 찬성';
+    const inf=el.querySelector('#skipinfo'); inf.textContent='과반수 스킵 시 바로 투표'; }
+  el.style.display = on?'flex':'none';
+}
+
+function renderScene(s){
+  if(s && s.kind!=='discskip' && discTick){ clearInterval(discTick); discTick=null; }
+  if(!s||!s.kind) return;
+  if(s.kind!=='discskip'){ try{ setPhaseBar(phaseBarLabel(s), (s.kind==='disc'||s.kind==='secret')?s.endsAt:null); }catch(e){} }
+  if(s.kind==='disc'){ try{ setSkipFloat(true); }catch(e){} } else if(s.kind!=='discskip'){ try{ setSkipFloat(false); }catch(e){} }
+  switch(s.kind){
+
+    case 'lobby': return renderLobby(s);
+
+    case 'role': {
+      cue('intro'); clearApp();
+      const c=$(`<div class="card fade center"></div>`);
+      c.appendChild($(`<div class="eyebrow">당신의 역할 · 당신만 봅니다</div>`));
+      const face=$(`<div class="roleface"></div>`);
+      face.appendChild($(`<div class="rn" style="color:${s.color}">${s.roleName}</div>`));
+      const fac=s.faction==='mafia'?'마피아 진영':s.faction==='neutral'?'중립':'시민 진영';
+      face.appendChild($(`<div class="pill">${fac}</div>`));
+      c.appendChild(face);
+      c.appendChild($(`<p class="muted">${s.desc}</p>`));
+      add(c);
+      const b=$(`<button class="amber">확인했어요</button>`);
+      b.onclick=()=>{ sendInput({t:'ack'}); localWait('역할 확인 완료','다른 사람을 기다리는 중…'); };
+      add(b); return;
+    }
+
+    case 'night': {
+      cue('night'); clearApp();
+      const c=$(`<div class="card fade"></div>`);
+      c.appendChild($(`<div class="eyebrow" style="color:${s.color}">밤 · ${s.roleName}</div>`));
+      c.appendChild($(`<h2>${s.verb}을 고르세요</h2>`));
+      const list=$(`<div class="seatlist"></div>`); let chosen=null;
+      const ok=$(`<button class="amber" disabled>결정</button>`);
+      s.targets.forEach(t=>{ const b=$(`<button class="choice">${escapeHtml(t.name)}</button>`);
+        b.onclick=()=>{ chosen=t.id; [...list.children].forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); ok.disabled=false; };
+        list.appendChild(b); });
+      c.appendChild(list); add(c);
+      const sk=$(`<button class="ghost">건너뛰기</button>`);
+      ok.onclick=()=>{ sendInput({t:'night', target:chosen}); localWait('밤','선택 완료. 다른 사람을 기다리는 중…'); };
+      sk.onclick=()=>{ sendInput({t:'night', target:null}); localWait('밤','건너뛰었습니다. 기다리는 중…'); };
+      add(ok); add(sk); return;
+    }
+
+    case 'invest': {
+      clearApp();
+      const c=$(`<div class="card fade center"></div>`);
+      c.appendChild($(`<div class="eyebrow" style="color:var(--amber)">조사 결과 · 당신만 봅니다</div>`));
+      c.appendChild($(`<h2>${escapeHtml(s.name)}</h2>`));
+      c.appendChild($(`<div class="rn" style="font-family:var(--serif);font-size:26px;color:${s.isMafia?'var(--crimson)':'var(--sage)'}">${s.isMafia?'마피아입니다':'마피아가 아닙니다'}</div>`));
+      add(c);
+      const b=$(`<button class="amber">확인</button>`);
+      b.onclick=()=>{ sendInput({t:'ack'}); localWait('밤','결과 확인 완료. 기다리는 중…'); };
+      add(b); return;
+    }
+
+    case 'wait': {
+      try{ scene3dHide(); }catch(e){}
+      clearApp();
+      const c=$(`<div class="card fade center"></div>`);
+      c.appendChild($(`<div class="eyebrow">${escapeHtml(s.title||'대기')}</div>`));
+      if(s.sub) c.appendChild($(`<p class="muted">${escapeHtml(s.sub)}</p>`));
+      add(c);
+      forceBtnIfHost(s); return;
+    }
+
+    case 'morning': {
+      cue('morning'); clearApp();
+      const c=$(`<div class="card fade"></div>`);
+      c.appendChild($(`<div class="eyebrow">${s.round}일차 · 아침</div>`));
+      c.appendChild($(`<h2>${s.deaths.length?'밤의 희생자':'평화로운 밤'}</h2>`));
+      if(s.deaths.length) c.appendChild($(`<p>${s.deaths.map(escapeHtml).join(', ')} 님이 사망했습니다.</p>`));
+      else c.appendChild($(`<p class="muted">아무도 죽지 않았습니다.</p>`));
+      c.appendChild(sceneSeats(s.seats)); add(c);
+      if(NET&&NET.isHost){ const b=$(`<button class="amber">토론 시작</button>`); b.onclick=oDiscussion; add(b); }
+      else add($(`<p class="small muted center">호스트가 토론을 시작합니다…</p>`));
+      return;
+    }
+
+    case 'disc': {
+      cue('discussion'); clearApp();
+      const c=$(`<div class="card fade center"></div>`);
+      c.appendChild($(`<div class="eyebrow">${s.round}일차 · 토론</div>`));
+      c.appendChild($(`<h2>누가 마피아일까</h2>`));
+      const tm=$(`<div class="rn" style="font-family:var(--serif);font-size:46px;color:var(--amber)">3:00</div>`);
+      c.appendChild(tm);
+      c.appendChild($(`<p class="muted small">자유롭게 이야기하세요(채팅/음성). 시간이 끝나면 투표로 넘어갑니다.</p>`));
+      add(c);
+      const upd=()=>{ const left=Math.max(0,Math.round((s.endsAt-Date.now())/1000)); const m=(left/60|0), ss=left%60; tm.textContent=`${m}:${String(ss).padStart(2,'0')}`; if(left<=0 && discTick){ clearInterval(discTick); discTick=null; } };
+      upd(); discTick=setInterval(upd,500);
+      return;
+    }
+
+    case 'discskip': {
+      const el=document.getElementById('skipinfo');
+      if(el) el.textContent=`스킵 ${s.have}/${s.need} — 과반수면 바로 투표로 넘어갑니다.`;
+      return;
+    }
+
+    case 'vote': {
+      cue('voting'); clearApp();
+      const c=$(`<div class="ballot fade"></div>`);
+      c.appendChild($(`<div class="eyebrow">투표 용지 · 비공개</div>`));
+      c.appendChild($(`<h2>누구를 처형할까요</h2>`));
+      const list=$(`<div class="seatlist"></div>`); let chosen=null;
+      const ok=$(`<button class="amber" disabled>투표</button>`);
+      s.targets.forEach(t=>{ const b=$(`<button class="choice">${escapeHtml(t.name)}${t.revealed?` <span class="muted small">· ${t.roleName} 공개됨</span>`:''}</button>`);
+        b.onclick=()=>{ chosen=t.id; [...list.children].forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); ok.disabled=false; };
+        list.appendChild(b); });
+      c.appendChild(list);
+      const ab=$(`<button class="ghost">기권</button>`);
+      ok.onclick=()=>{ sendInput({t:'vote', target:chosen}); localWait('투표','투표 완료. 결과를 기다리는 중…'); };
+      ab.onclick=()=>{ sendInput({t:'vote', target:null}); localWait('투표','기권했습니다. 결과를 기다리는 중…'); };
+      c.appendChild(ok); c.appendChild(ab); add(c); return;
+    }
+
+    case 'punish': {
+      cue('punishment'); clearApp();
+      const c=$(`<div class="card fade"></div>`);
+      c.appendChild($(`<div class="eyebrow">${s.round}일차 · 처벌</div>`));
+      c.appendChild($(`<p>${escapeHtml(s.text)}</p>`));
+      c.appendChild(sceneSeats(s.seats)); add(c);
+      if(NET&&NET.isHost){
+        if(s.win){ const b=$(`<button class="amber">결과 보기</button>`); b.onclick=()=>oGameover(O._win); add(b); }
+        else { const b=$(`<button class="amber">비밀 대화</button>`); b.onclick=oSecret; add(b); }
+      } else add($(`<p class="small muted center">호스트가 진행합니다…</p>`));
+      return;
+    }
+
+    case 'secret': {
+      cue('secret'); clearApp();
+      const c=$(`<div class="card fade center"></div>`);
+      c.appendChild($(`<div class="eyebrow">${s.round}일차 · 비밀 대화</div>`));
+      c.appendChild($(`<h2>은밀한 귓속말</h2>`));
+      const tm=$(`<div class="rn" style="font-family:var(--serif);font-size:40px;color:var(--neutral)">0:45</div>`);
+      c.appendChild(tm);
+      c.appendChild($(`<p class="muted small">오른쪽 아래 채팅에서 상대를 골라 귓속말을 보내세요. <b>이 시간에는 “누가 누구에게” 보냈는지 모두에게 공개</b>됩니다 (내용은 비밀).</p>`));
+      add(c);
+      const upd=()=>{ const left=Math.max(0,Math.round((s.endsAt-Date.now())/1000)); const m=(left/60|0), ss=left%60; tm.textContent=`${m}:${String(ss).padStart(2,'0')}`; if(left<=0 && discTick){ clearInterval(discTick); discTick=null; } };
+      upd(); discTick=setInterval(upd,500);
+      if(NET&&NET.isHost){ const b=$(`<button class="amber">다음 밤으로</button>`); b.onclick=oAfterSecret; add(b); }
+      else add($(`<p class="small muted center">잠시 후 다음 밤으로…</p>`));
+      return;
+    }
+
+    case 'over': {
+      cue('gameover'); clearApp();
+      const c=$(`<div class="card fade center"></div>`);
+      c.appendChild($(`<div class="eyebrow">게임 종료</div>`));
+      c.appendChild($(`<h1 style="color:${s.color}">${escapeHtml(s.label)}</h1>`));
+      add(c);
+      const board=$(`<div class="card"></div>`);
+      board.appendChild($(`<div class="eyebrow">전원 공개</div>`));
+      const list=$(`<div class="seatlist"></div>`);
+      s.reveal.forEach(p=>{ list.appendChild($(`<div class="seat ${p.state==='생존'?'':'dead'}"><div class="dot"></div>
+        <div class="grow"><b>${escapeHtml(p.name)}</b> <span class="muted small">· ${p.state}</span></div>
+        <div class="tag" style="color:${p.color}">${p.roleName}</div></div>`)); });
+      board.appendChild(list); add(board);
+      const log=$(`<div class="card"></div>`);
+      log.appendChild($(`<div class="eyebrow">기록</div>`));
+      const lb=$(`<div class="log"></div>`);
+      (s.log||[]).forEach(l=>lb.appendChild($(`<div class="line ${l.t==='dead'?'dead':'sys'}">${l.s}</div>`)));
+      log.appendChild(lb); add(log);
+      if(NET&&NET.isHost){ const b=$(`<button class="amber">로비로 (새 게임)</button>`); b.onclick=oReturnLobby; add(b); }
+      else add($(`<p class="small muted center">호스트가 새 게임을 시작할 수 있어요.</p>`));
+      const leave=$(`<button class="ghost">방 나가기</button>`); leave.onclick=()=>{ leaveRoom(); screenOnlineMenu(); }; add(leave);
+      return;
+    }
+  }
+}
+
+function renderLobby(s){
+  clearApp();
+  const w=$(`<div class="fade" style="display:flex;flex-direction:column;gap:14px"></div>`);
+  w.appendChild($(`<div class="eyebrow">온라인 로비</div>`));
+
+  const head=$(`<div class="card center"></div>`);
+  head.appendChild($(`<div class="eyebrow">방 코드</div>`));
+  head.appendChild($(`<div style="font-family:var(--mono);font-size:40px;letter-spacing:.3em;color:var(--amber)">${s.code}</div>`));
+  head.appendChild($(`<p class="muted small">친구에게 코드를 알려주고, 같은 화면에서 ‘참가’하게 하세요.</p>`));
+  const copy=$(`<button class="ghost">코드 복사</button>`);
+  copy.onclick=()=>{ try{ navigator.clipboard.writeText(s.code); copy.textContent='복사됨 ✓'; setTimeout(()=>copy.textContent='코드 복사',1200);}catch(e){} };
+  head.appendChild(copy);
+  w.appendChild(head);
+
+  const pc=$(`<div class="card"></div>`);
+  pc.appendChild($(`<div class="eyebrow">참가자 · ${s.players.length}명</div>`));
+  const list=$(`<div class="seatlist"></div>`);
+  s.players.forEach(p=>{ list.appendChild($(`<div class="seat"><div class="dot"></div>
+    <div class="grow">${escapeHtml(p.name)}</div>${p.bot?`<div class="tag muted">AI</div>`:''}${p.isHost?`<div class="tag" style="color:var(--amber)">호스트</div>`:''}</div>`)); });
+  pc.appendChild(list);
+  w.appendChild(pc);
+
+  if(NET&&NET.isHost){
+    const oc=$(`<div class="card"></div>`);
+    oc.appendChild($(`<div class="eyebrow">설정</div>`));
+    const jb=$(`<button class="choice">광대(중립) 포함 — 5인 이상</button>`);
+    jb.classList.toggle('sel', s.jester);
+    jb.disabled=s.players.length<5;
+    jb.onclick=()=>{ if(s.players.length>=5){ lobbyJester=!lobbyJester; rebroadcastLobby(); } };
+    oc.appendChild(jb);
+    const brow=$(`<div style="display:flex;gap:8px;margin-top:8px"></div>`);
+    const addb=$(`<button class="choice" style="flex:1">+ AI 추가</button>`); addb.onclick=addBot; addb.disabled=s.players.length>=8;
+    const delb=$(`<button class="choice" style="flex:1">− AI 빼기</button>`); delb.onclick=removeBot; delb.disabled=!s.players.some(x=>x.bot);
+    brow.appendChild(addb); brow.appendChild(delb); oc.appendChild(brow);
+    w.appendChild(oc);
+    const start=$(`<button class="amber">게임 시작 (${s.players.length}명)</button>`);
+    start.disabled=!s.canStart;
+    start.onclick=oStartGame;
+    w.appendChild(start);
+    w.appendChild($(`<p class="small muted center">${s.canStart?'4명 이상을 권장합니다.':'최소 2명이 필요합니다.'}</p>`));
+  }else{
+    w.appendChild($(`<p class="small muted center">호스트가 게임을 시작하길 기다리는 중…</p>`));
+  }
+  const leave=$(`<button class="ghost">방 나가기</button>`);
+  leave.onclick=()=>{ leaveRoom(); screenOnlineMenu(); };
+  w.appendChild(leave);
+  add(w);
+}
+
+/* ════════ 온라인 채팅 — 호스트 권위 라우팅(스코프) ════════
+   게스트→호스트로 보내면 호스트가 스코프를 판정해 대상에게만 되돌린다.
+   · 죽은 사람: 죽은 사람끼리만(관전)  · 산 사람 공개발언: 토론 시간에만
+   · 로비/종료: 전원 공개  · 비밀쪽지는 별도(게임 내 'secret') */
+function chatInjectCSS(){
+  if(document.getElementById('chat-css')) return;
+  const st=document.createElement('style'); st.id='chat-css';
+  st.textContent =
+    '#chatbox{position:fixed;right:12px;bottom:12px;z-index:45;display:flex;flex-direction:column;align-items:flex-end;font-family:var(--sans)}'+
+    '#chat-toggle{position:relative;width:52px;height:52px;border-radius:50%;border:1px solid var(--line);background:var(--amber);color:#241a06;font-size:22px;box-shadow:0 4px 16px rgba(0,0,0,.4);cursor:pointer}'+
+    '#chat-panel{display:none;width:min(78vw,320px);height:min(46vh,380px);margin-bottom:10px;flex-direction:column;'+
+    'background:rgba(20,24,33,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:14px;overflow:hidden}'+
+    '#chatbox.open #chat-panel{display:flex}'+
+    '#chat-head{padding:9px 13px;font:600 12px/1 var(--mono);letter-spacing:.18em;color:var(--amber);border-bottom:1px solid var(--line)}'+
+    '#chat-msgs{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:7px}'+
+    '#chat-msgs .m{font-size:14px;line-height:1.4;color:var(--bone);word-break:break-word}'+
+    '#chat-msgs .m b{color:var(--amber);font-weight:600;margin-right:5px}'+
+    '#chat-msgs .m.sys{color:var(--muted);font-style:italic;font-size:13px}'+
+    '#chat-in{display:flex;gap:6px;padding:9px;border-top:1px solid var(--line);flex-wrap:wrap}'+
+    '#chat-in select{font:500 13px var(--sans);color:var(--amber);background:#0f1118;border:1px solid var(--line);border-radius:9px;padding:6px 8px;max-width:40%}'+
+    '#chat-in input{flex:1;min-width:120px;font:500 15px var(--sans);color:var(--bone);background:#0f1118;border:1px solid var(--line);border-radius:9px;padding:9px 11px}'+
+    '#chat-in button{padding:0 14px;border-radius:9px;background:var(--amber);color:#241a06;border:none;font-weight:700}'+
+    '#chat-toggle .badge{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--crimson);color:#fff;font:700 11px/18px var(--sans);display:none}'+
+    '#chatbox.open #chat-toggle .badge{display:none}';
+  document.head.appendChild(st);
+}
+let chatUnread=0;
+function chatInit(){
+  if(document.getElementById('chatbox')) return;
+  chatInjectCSS();
+  const box=document.createElement('div'); box.id='chatbox';
+  box.innerHTML =
+    '<div id="chat-panel">'+
+      '<div id="chat-head">채팅</div>'+
+      '<div id="chat-msgs"></div>'+
+      '<div id="chat-in"><select id="chat-to"><option value="">전체</option></select><input id="chat-text" placeholder="메시지…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send"><button id="chat-send">전송</button></div>'+
+    '</div>'+
+    '<button id="chat-toggle">💬<span class="badge">0</span></button>';
+  document.body.appendChild(box);
+  const toggle=box.querySelector('#chat-toggle');
+  const input=box.querySelector('#chat-text');
+  const send=box.querySelector('#chat-send');
+  toggle.onclick=()=>{ box.classList.toggle('open'); if(box.classList.contains('open')){ chatUnread=0; updateBadge(); setTimeout(()=>input.focus(),50); } };
+  send.onclick=chatSend;
+  let composing=false;
+  input.addEventListener('compositionstart',()=>{ composing=true; });
+  input.addEventListener('compositionend',()=>{ composing=false; });
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter' && !composing && !e.isComposing && e.keyCode!==229){ e.preventDefault(); chatSend(); }
+  });
+  chatAppend(null,'전체 채팅 + 귓속말(상대 선택). 귓속말은 언제든 가능, 공개 발언은 밤·투표 중 제한.',true);
+}
+function updateBadge(){
+  const b=document.querySelector('#chat-toggle .badge'); if(!b) return;
+  b.textContent=chatUnread; b.style.display=chatUnread>0?'block':'none';
+}
+function bumpUnread(){
+  const box=document.getElementById('chatbox');
+  if(box && !box.classList.contains('open')){ chatUnread++; updateBadge(); }
+}
+function chatAppend(name, text, sys, tag){
+  const list=document.getElementById('chat-msgs'); if(!list) return;
+  const m=document.createElement('div'); m.className='m'+(sys?' sys':'');
+  if(sys) m.textContent=text;
+  else {
+    m.innerHTML='<b></b><span></span>';
+    const b=m.querySelector('b');
+    b.textContent=(tag?('['+tag+'] '):'')+name+':';
+    if(tag==='관전') b.style.color='var(--crimson)';
+    else if(tag && tag.indexOf('귓속말')===0) b.style.color='var(--neutral)';
+    m.querySelector('span').textContent=text;
+  }
+  list.appendChild(m);
+  while(list.children.length>80) list.removeChild(list.firstChild);
+  list.scrollTop=list.scrollHeight;
+}
+/* 화면 표시(이미 스코프가 정해진 메시지) */
+function chatShow(p){
+  if(!p) return;
+  if(p.scope==='sys'){ chatAppend(null, String(p.text||''), true); bumpUnread(); return; }
+  let tag=null;
+  if(p.scope==='spectator') tag='관전';
+  else if(p.scope==='whisper') tag = p.toName? ('귓속말→'+p.toName) : '귓속말';
+  chatAppend((p.name||'익명').slice(0,12), String(p.text||'').slice(0,300), false, tag);
+  bumpUnread();
+}
+function rosterName(peerId){ const r=ROSTER.find(x=>x.peerId===peerId); return r?r.name:'익명'; }
+/* 호스트: 대상 목록에 스코프 적용해 전달(+본인이 대상이면 즉시 표시) */
+function chatForward(payload, peerIds){
+  const targets = peerIds || ROSTER.map(r=>r.peerId);
+  targets.forEach(pid=>{ if(pid===NET.selfId) chatShow(payload); else { try{ NET.send.chat(payload, pid); }catch(e){} } });
+}
+function chatForwardTo(peerId, payload){
+  if(peerId===NET.selfId) chatShow(payload); else { try{ NET.send.chat(payload, peerId); }catch(e){} }
+}
+/* 호스트: 들어온 채팅의 스코프 판정 */
+function hostChat(senderPeerId, text, to){
+  text=String(text||'').slice(0,300).trim(); if(!text) return;
+  const senderName = O ? (O.players[idxByPeer(senderPeerId)]?.name || rosterName(senderPeerId)) : rosterName(senderPeerId);
+
+  // ── 귓속말(비밀채팅): 언제나 · 누구나 · 누구에게나 ──
+  if(to!=null && O){
+    const t=O.players[+to]; if(!t) return;
+    chatForwardTo(t.peerId, {name:senderName, text, scope:'whisper'});                 // 받는 사람: [귓속말] 보낸이
+    if(t.peerId!==senderPeerId) chatForwardTo(senderPeerId, {name:senderName, text, scope:'whisper', toName:t.name}); // 보낸 사람: [귓속말→대상]
+    if(O.phase==='secret'){ // 비밀 대화 시간: 누가 누구에게 보냈는지 공개(내용은 비밀)
+      chatForward({scope:'sys', text:`✉ ${senderName} → ${t.name} (비밀 쪽지)`}, O.players.map(x=>x.peerId));
+    }
+    return;
+  }
+
+  // ── 공개 채팅 ──
+  if(!O){ chatForward({name:senderName, text, scope:'public'}, null); return; } // 로비
+  const p=O.players[idxByPeer(senderPeerId)] || null;
+  const playing = O.phase && O.phase!=='over';
+  if(p && !p.alive && playing){ // 사망자 → 관전(사망자끼리만)
+    const dead=O.players.filter(x=>!x.alive).map(x=>x.peerId);
+    chatForward({name:p.name, text, scope:'spectator'}, dead); return;
+  }
+  if(playing && (O.phase==='night'||O.phase==='vote')){ // 밤·투표 중 공개 발언 제한(귓속말은 가능)
+    chatForwardTo(senderPeerId, {text:'지금은 공개 발언이 제한됩니다 — 귓속말은 가능합니다.', scope:'sys'}); return;
+  }
+  if(p && O.intel){ O.intel.chatCount[p.id]=(O.intel.chatCount[p.id]||0)+1; }
+  chatForward({name:senderName, text, scope:'public'}, O.players.map(x=>x.peerId));
+}
+function chatSend(){
+  const input=document.getElementById('chat-text'); if(!input||!NET) return;
+  const text=input.value.trim(); if(!text) return;
+  const sel=document.getElementById('chat-to');
+  const to = (sel && sel.value!=='') ? parseInt(sel.value,10) : null;
+  input.value='';
+  if(NET.isHost){ hostChat(NET.selfId, text, to); }
+  else {
+    if(!NET.hostId){ chatShow({text:'아직 호스트와 연결 중입니다…', scope:'sys'}); return; }
+    try{ NET.send.chat({text, to}, NET.hostId); }catch(e){}
+  }
+}
+function chatDestroy(){
+  const box=document.getElementById('chatbox'); if(box) box.remove();
+  chatUnread=0;
+}
+
+/* ── 목숨/명단 상태(비공개) ── */
+let myLives=0, myRoster=[], myId=-1;
+function applyStatus(d){
+  if(!d) return;
+  if(typeof d.lives==='number') myLives=d.lives;
+  if(typeof d.you==='number') myId=d.you;
+  if(Array.isArray(d.roster)) myRoster=d.roster;
+  livesShow(); updateLivesUI(); updateWhisperOptions();
+  if(d.flash){ chatAppend(null, d.flash, true); bumpUnread(); }
+}
+function oStatus(i, flash){
+  if(!O) return; const p=O.players[i]; if(!p) return;
+  const roster=O.players.map(x=>({id:x.id, name:x.name, alive:x.alive}));
+  const msg={lives:p.lives, you:p.id, roster}; if(flash) msg.flash=flash;
+  if(p.peerId===NET.selfId) applyStatus(msg); else { try{ NET.send.status(msg, p.peerId); }catch(e){} }
+}
+function oStatusAll(){ if(!O) return; O.players.forEach(p=>oStatus(p.id)); }
+
+/* ════════ 제스처 전파(호스트 라우팅) + 3D 좌석 위 표시 ════════ */
+function netGesture(kind){
+  const seat=scene3dMyIndex;
+  if(seat==null || seat<0) return;
+  if(!NET) return;                 // 오프라인이면 1인칭 손만(이미 처리됨)
+  const msg={seat, kind};
+  if(NET.isHost) hostGesture(NET.selfId, msg);
+  else { try{ NET.send.gesture(msg, NET.hostId); }catch(e){} }
+}
+window.netGesture=netGesture;
+function hostGesture(senderPeerId, msg){
+  if(!msg || !NET) return;
+  const peers=(typeof ROSTER!=='undefined' && ROSTER.length)?ROSTER:[];
+  peers.forEach(r=>{
+    if(r.bot) return;
+    if(r.peerId===senderPeerId) return;                       // 보낸 사람은 자기 손으로 이미 봄
+    if(r.peerId===NET.selfId) showSeatGesture(msg.seat, msg.kind);   // 호스트 본인 화면
+    else { try{ NET.send.gesture(msg, r.peerId); }catch(e){} }
+  });
+}
+const GEST_EMOJI={middle:'🖕', thumbsup:'👍', wag:'☝️'};
+function showSeatGesture(seat, kind){
+  try{
+    if(!G3 || !scene3dOn || !G3.T) return;
+    if(seat==null || seat===scene3dMyIndex) return;           // 내 좌석은 1인칭 손으로 봄
+    const T=G3.T, n=getSeatCount();
+    if(seat<0 || seat>=n) return;
+    const a=seatAngle(seat,n), r=2.95;
+    const emoji=GEST_EMOJI[kind]||'✋';
+    const cv=document.createElement('canvas'); cv.width=cv.height=128;
+    const cx=cv.getContext('2d'); cx.font='98px serif'; cx.textAlign='center'; cx.textBaseline='middle';
+    cx.fillText(emoji,64,72);
+    const tex=new T.CanvasTexture(cv); try{ tex.anisotropy=2; }catch(_){}
+    const spr=new T.Sprite(new T.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+    spr.scale.set(0.85,0.85,0.85);
+    spr.position.set(Math.cos(a)*r, 2.0, Math.sin(a)*r);
+    G3.scene.add(spr);
+    const t0=performance.now();
+    (function anim(){
+      const e=(performance.now()-t0)/1900;
+      if(e>=1 || !G3 || !scene3dOn){ try{ G3&&G3.scene.remove(spr); spr.material.dispose(); tex.dispose(); }catch(_){} return; }
+      spr.position.y=2.0+e*0.85;
+      spr.material.opacity=1-e*e;
+      requestAnimationFrame(anim);
+    })();
+  }catch(e){}
+}
+
+function livesShow(){
+  if(document.getElementById('lives')) return;
+  const el=document.createElement('div'); el.id='lives';
+  Object.assign(el.style,{position:'fixed',top:'10px',left:'10px',zIndex:'70',font:'16px var(--sans)',
+    padding:'5px 11px',borderRadius:'10px',background:'rgba(20,24,33,.82)',border:'1px solid var(--line)',color:'var(--bone)'});
+  document.body.appendChild(el);
+}
+function livesHide(){ const el=document.getElementById('lives'); if(el) el.remove(); }
+function updateLivesUI(){
+  const el=document.getElementById('lives'); if(!el) return;
+  el.textContent = myLives>0 ? ('내 목숨 '+'❤'.repeat(myLives)) : '💀 탈락';
+  el.style.color = myLives>0 ? 'var(--bone)' : 'var(--crimson)';
+}
+function updateWhisperOptions(){
+  const sel=document.getElementById('chat-to'); if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">전체</option>';
+  (myRoster||[]).forEach(r=>{ if(r.id===myId) return;
+    const o=document.createElement('option'); o.value=String(r.id);
+    o.textContent='→ '+r.name+(r.alive?'':' (탈락)'); sel.appendChild(o); });
+  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+}
+
+/* ════════ 3D 배경 씬 (Three.js) ════════ */
+let TH3=null, G3=null, scene3dRAF=0, scene3dWantNight=false, scene3dLastCount=4, scene3dOn=false;
+let scene3dMyIndex=-1;
+let scene3dYawT=0, scene3dPitchT=0, scene3dYaw=0, scene3dPitch=0;
+const SCENE3D_COLORS=[0xe05a4d,0x4d8be0,0x57b87a,0xe0a83c,0xa878c0,0xe07ab0,0x49b6c0,0xcad24a];
+
+async function load3D(){
+  if(TH3) return TH3;
+  const cdns=[
+    './vendor/three.module.js',
+    'https://esm.sh/three@0.161.0',
+    'https://cdn.jsdelivr.net/npm/three@0.161.0/+esm',
+    'https://esm.run/three@0.161.0'
+  ];
+  for(const url of cdns){
+    try{ const m=await import(url); if(m && m.WebGLRenderer && m.Scene){ TH3=m; return m; } }
+    catch(e){}
+  }
+  return null;
+}
+
+function inject3DCSS(){
+  if(document.getElementById('scene3d-css')) return;
+  const st=document.createElement('style'); st.id='scene3d-css';
+  st.textContent =
+    '#scene3d{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:none;pointer-events:none}'+
+    'body.scene-on{background:#06070c}'+
+    'body.scene-on #app{position:relative;z-index:1}'+
+    'body.scene-on .card{background:linear-gradient(180deg,rgba(27,31,42,.74),rgba(20,24,33,.8));'+
+    'backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);border-color:rgba(86,96,122,.55)}';
+  document.head.appendChild(st);
+}
+
+function getSeatCount(){
+  try{ if(typeof O!=='undefined' && O && O.players && O.players.length) return O.players.length; }catch(e){}
+  try{ if(typeof S!=='undefined' && S && S.players && S.players.length) return S.players.length; }catch(e){}
+  return scene3dLastCount||4;
+}
+
+async function scene3dEnsure(){
+  if(G3) return G3;
+  inject3DCSS();
+  const T=await load3D();
+  if(!T || G3) return G3;
+
+  const canvas=document.createElement('canvas'); canvas.id='scene3d';
+  document.body.insertBefore(canvas, document.body.firstChild);
+  const renderer=new T.WebGLRenderer({canvas, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+
+  const scene=new T.Scene();
+  scene.background=new T.Color(0x06070c);
+  scene.fog=new T.Fog(0x06070c, 7, 16);
+
+  const camera=new T.PerspectiveCamera(48, 1, 0.1, 100);
+  camera.fov=scene3dFraming(getSeatCount()).fov;
+  camera.position.set(0, 2.5, 5.4);
+
+  const amb=new T.AmbientLight(0x223049, 0.16); scene.add(amb);
+  const moon=new T.DirectionalLight(0x586b96, 0.07); moon.position.set(-5,9,3); scene.add(moon);
+
+  const table=new T.Mesh(new T.CylinderGeometry(2.7,2.7,0.32,56),
+    new T.MeshStandardMaterial({color:0x8a431a, roughness:0.85, metalness:0.04}));
+  table.position.y=0.34; scene.add(table);              // 윗면 ≈ 0.5 (몸통 높이)
+  const rim=new T.Mesh(new T.TorusGeometry(2.7,0.13,12,56),
+    new T.MeshStandardMaterial({color:0x5d2c0f, roughness:0.9}));
+  rim.rotation.x=Math.PI/2; rim.position.y=0.5; scene.add(rim);
+  const legMat=new T.MeshStandardMaterial({color:0x47230f, roughness:0.95});
+  for(let i=0;i<4;i++){ const a=Math.PI/4 + i*Math.PI/2;
+    const leg=new T.Mesh(new T.CylinderGeometry(0.14,0.1,3,10), legMat);
+    leg.position.set(Math.cos(a)*2.16,-1.32,Math.sin(a)*2.16); scene.add(leg); }
+
+  const lantern=new T.Group(); lantern.position.set(0,0.78,0); lantern.scale.setScalar(0.62); scene.add(lantern);
+  const cageMat=new T.MeshStandardMaterial({color:0x8b8e94, roughness:0.55, metalness:0.45});
+  lantern.add(new T.Mesh(new T.CylinderGeometry(0.34,0.34,0.7,16,1,true),
+    new T.MeshStandardMaterial({color:0xfff0c0, transparent:true, opacity:0.12, side:T.DoubleSide})));
+  const top=new T.Mesh(new T.ConeGeometry(0.42,0.3,10), cageMat); top.position.y=0.5; lantern.add(top);
+  const base=new T.Mesh(new T.CylinderGeometry(0.4,0.42,0.12,16), cageMat); base.position.y=-0.4; lantern.add(base);
+  [0.34,-0.34].forEach(y=>{ const r=new T.Mesh(new T.TorusGeometry(0.34,0.025,8,20), cageMat);
+    r.rotation.x=Math.PI/2; r.position.y=y; lantern.add(r); });
+  const handle=new T.Mesh(new T.TorusGeometry(0.18,0.022,8,18), cageMat); handle.position.y=0.62; lantern.add(handle);
+  const flameMat=new T.MeshBasicMaterial({color:0xffc23c});
+  const flame=new T.Mesh(new T.SphereGeometry(0.15,16,16), flameMat);
+  flame.scale.set(1,1.6,1); lantern.add(flame);
+  const lLight=new T.PointLight(0xffb347, 2.6, 32, 1.2); lLight.position.y=0.22; lantern.add(lLight);
+
+  G3={renderer,scene,camera,lantern,flame,flameMat,lLight,amb,players:[],curKey:'',T,t0:performance.now()};
+  scene3dResize();
+  window.addEventListener('resize', scene3dResize);
+  scene3dSetPlayers(getSeatCount());
+  return G3;
+}
+
+function seatAngle(k, n){ return -Math.PI/2 + k*(Math.PI*2/n); }
+
+/* 인원수에 따라 카메라를 자동 조정: 사람이 많을수록 시야각을 넓히고
+   살짝 뒤로·위로 빼서 정면(정반대) 포함 모두가 한 화면에 담기도록 한다. */
+function scene3dFraming(n){
+  n=Math.max(2,Math.min(8,n|0));
+  const fov   = 48 + (n-2)*3.8;     // 2명 48° → 8명 ≈ 71°
+  const seatR = 3.4 + (n-2)*0.07;   // 탁자 축소에 맞춰 살짝 당김
+  const eyeY  = 1.55;               // 탁자 너머가 보이도록 눈높이 ↑
+  const pitch = -0.17;              // 탁자 위를 약간 내려다봄(랜턴 너머 정면 확보)
+  return {fov, seatR, eyeY, pitch};
+}
+
+/* 의자 (어두운 목재) */
+function buildChair(T){
+  const wood=new T.MeshStandardMaterial({color:0x5a3a1e, roughness:0.85, metalness:0.05});
+  const ch=new T.Group();
+  const seat=new T.Mesh(new T.BoxGeometry(0.62,0.1,0.6), wood); seat.position.set(0,-0.05,0.02); ch.add(seat);
+  const back=new T.Mesh(new T.BoxGeometry(0.62,0.62,0.09), wood); back.position.set(0,0.3,-0.3); ch.add(back);
+  const legGeo=new T.CylinderGeometry(0.05,0.045,0.85,8);
+  [[0.26,0.26],[-0.26,0.26],[0.26,-0.26],[-0.26,-0.26]].forEach(p=>{
+    const lg=new T.Mesh(legGeo, wood); lg.position.set(p[0],-0.52,p[1]+0.02); ch.add(lg);
+  });
+  return ch;
+}
+
+/* 슬림한 앉은 캐릭터 (정면=+Z). 첨부 이미지처럼 머리/몸통/팔다리, 뚱뚱하지 않게 */
+/* 두 점 사이를 잇는 매끈한 캡슐(원기둥+양끝 둥근 마감). 관절 분리 없이 한 덩어리 느낌. */
+function limbBetween(T, mat, p0, p1, radius){
+  const ax=p1[0]-p0[0], ay=p1[1]-p0[1], az=p1[2]-p0[2];
+  const len=Math.max(0.001, Math.hypot(ax,ay,az));
+  let mesh;
+  if(T.CapsuleGeometry){
+    mesh=new T.Mesh(new T.CapsuleGeometry(radius, len, 6, 16), mat);
+  } else {
+    const grp=new T.Group();
+    grp.add(new T.Mesh(new T.CylinderGeometry(radius,radius,len,16,1), mat));
+    const a=new T.Mesh(new T.SphereGeometry(radius,16,12), mat); a.position.y=-len/2; grp.add(a);
+    const b=new T.Mesh(new T.SphereGeometry(radius,16,12), mat); b.position.y= len/2; grp.add(b);
+    mesh=grp;
+  }
+  const dir=new T.Vector3(ax,ay,az).normalize();
+  mesh.quaternion.copy(new T.Quaternion().setFromUnitVectors(new T.Vector3(0,1,0), dir));
+  mesh.position.set((p0[0]+p1[0])/2,(p0[1]+p1[1])/2,(p0[2]+p1[2])/2);
+  return mesh;
+}
+
+/* 살짝 휘는 매끈한 팔다리(곡선 튜브 + 양끝 둥근 마감). 한 덩어리라 이음새 없음. */
+function curvedLimb(T, mat, p0, pc, p1, radius){
+  const grp=new T.Group();
+  const curve=new T.QuadraticBezierCurve3(
+    new T.Vector3(p0[0],p0[1],p0[2]),
+    new T.Vector3(pc[0],pc[1],pc[2]),
+    new T.Vector3(p1[0],p1[1],p1[2]));
+  grp.add(new T.Mesh(new T.TubeGeometry(curve, 20, radius, 16, false), mat));
+  const a=new T.Mesh(new T.SphereGeometry(radius,16,12), mat); a.position.set(p0[0],p0[1],p0[2]); grp.add(a);
+  const b=new T.Mesh(new T.SphereGeometry(radius,16,12), mat); b.position.set(p1[0],p1[1],p1[2]); grp.add(b);
+  return grp;
+}
+
+/* 슬림하고 매끈한 한 덩어리 캐릭터 (사진 느낌). 정면=+Z(탁자 중앙쪽).
+   팔은 어깨에서 탁자 위로 뻗어 올려놓은 자세. 다리는 탁자 밑이라 짧게. */
+function buildSeatedFigure(T, mat){
+  const f=new T.Group();
+  // 몸통: 회전체(Lathe)로 둥근어깨-잘록허리-엉덩이 실루엣을 매끈하게 (사진 느낌)
+  const prof=[
+    [0.02,0.00],[0.20,0.04],[0.29,0.12],[0.30,0.22],
+    [0.27,0.40],[0.30,0.58],[0.34,0.74],[0.31,0.90],
+    [0.20,1.02],[0.08,1.08],[0.02,1.10]
+  ].map(p=>new T.Vector2(p[0],p[1]));
+  const torsoMat=mat.clone(); torsoMat.side=T.DoubleSide; // 회전체 노멀 방향 무관하게 안전
+  const torso=new T.Mesh(new T.LatheGeometry(prof,32), torsoMat);
+  torso.position.y=0.12; f.add(torso);
+  // 목: 몸통과 머리를 잇는 짧은 목 (머리가 몸통에 파묻히지 않게)
+  const neck=new T.Mesh(new T.CylinderGeometry(0.12,0.15,0.26,16), mat); neck.position.set(0,1.14,0.01); f.add(neck);
+  // 머리: 목 위로 또렷하게 얹힌 한 덩어리 (몸통과 안 붙게)
+  const head=new T.Mesh(new T.SphereGeometry(0.3,22,20), mat); head.position.set(0,1.40,0.02); f.add(head);
+  // 어깨~팔: 어깨 덩어리가 몸통과 겹쳐 이음새 없이 이어지고, 팔은 바깥으로 곡선을 그리며 탁자 위로
+  [-1,1].forEach(sx=>{
+    const sh=new T.Mesh(new T.SphereGeometry(0.18,18,16), mat); sh.position.set(0.27*sx,0.88,0.05); f.add(sh); // 어깨: 몸통에 묻혀 자연스럽게 연결
+    f.add(curvedLimb(T, mat, [0.33*sx,0.90,0.06], [0.47*sx,0.72,0.42], [0.27*sx,0.60,0.70], 0.115));
+  });
+  // 다리: 탁자 밑(거의 안 보임), 통통하고 둥근 마감
+  f.add(limbBetween(T, mat, [ 0.15,0.2,0.06], [ 0.17,-0.5,0.3], 0.15));
+  f.add(limbBetween(T, mat, [-0.15,0.2,0.06], [-0.17,-0.5,0.3], 0.15));
+  return f;
+}
+
+function scene3dSetPlayers(n){
+  if(!G3) return; const T=G3.T;
+  n=Math.max(2,Math.min(8,n|0));
+  const me=(scene3dMyIndex>=0 && scene3dMyIndex<n)?scene3dMyIndex:0;
+  const key=n+'/'+me;
+  if(key===G3.curKey) return;
+  G3.curKey=key;
+  G3.players.forEach(p=>G3.scene.remove(p)); G3.players=[];
+  const r=2.95;
+  for(let k=0;k<n;k++){
+    if(k===me) continue;
+    const a=seatAngle(k,n);
+    const col=SCENE3D_COLORS[k%SCENE3D_COLORS.length];
+    const mat=new T.MeshStandardMaterial({color:col, roughness:0.65});
+    const g=new T.Group();
+    g.add(buildChair(T));
+    g.add(buildSeatedFigure(T, mat));
+    g.position.set(Math.cos(a)*r, 0.0, Math.sin(a)*r);
+    g.rotation.y = -a - Math.PI/2;   // 정면(+Z)이 탁자 중앙을 향하도록
+    G3.scene.add(g); G3.players.push(g);
+  }
+}
+
+function scene3dResize(){
+  if(!G3) return;
+  const w=window.innerWidth, h=window.innerHeight;
+  G3.renderer.setSize(w,h,false);
+  G3.camera.aspect=w/h; G3.camera.updateProjectionMatrix();
+}
+
+function scene3dTryPoint(x,y){
+  try{
+    if(!G3||!scene3dOn) return;
+    const T=G3.T;
+    const ndc=new T.Vector2((x/window.innerWidth)*2-1, -(y/window.innerHeight)*2+1);
+    if(!G3.ray) G3.ray=new T.Raycaster();
+    G3.ray.setFromCamera(ndc, G3.camera);
+    const hits=G3.ray.intersectObjects(G3.players, true);
+    if(hits && hits.length){ G3.pointTarget=hits[0].point.clone(); G3.pointEnd=performance.now()+2600; }
+  }catch(e){}
+}
+
+function scene3dLoop(){
+  scene3dRAF=requestAnimationFrame(scene3dLoop);
+  if(!G3 || !scene3dOn) return;
+  if(!G3.myArm){
+    const T=G3.T;
+    const mm=new T.MeshStandardMaterial({color:0xe7decb, roughness:0.6, metalness:0.0});
+    let arm;
+    if(T.CapsuleGeometry) arm=new T.Mesh(new T.CapsuleGeometry(0.07,0.42,6,14), mm);
+    else { arm=new T.Group(); arm.add(new T.Mesh(new T.CylinderGeometry(0.07,0.07,0.42,14), mm)); }
+    G3.myArm=new T.Group(); G3.myArm.add(arm); G3.myArm.visible=false;
+    try{ G3.scene.add(G3.camera); G3.camera.add(G3.myArm); }catch(e){}
+    G3.pointT=0;
+  }
+  const t=(performance.now()-G3.t0)/1000;
+  const tgtL=scene3dWantNight?0.0:2.7, tgtA=scene3dWantNight?0.05:0.16;
+  G3.lLight.intensity += (tgtL-G3.lLight.intensity)*0.07;
+  G3.amb.intensity   += (tgtA-G3.amb.intensity)*0.07;
+  if(!scene3dWantNight){
+    G3.lLight.intensity += Math.sin(t*13)*0.18 + (Math.random()-0.5)*0.12;
+    G3.flame.scale.y = 1.5 + Math.sin(t*9)*0.18;
+    G3.flameMat.color.setHSL(0.11, 1, 0.55+Math.sin(t*15)*0.05);
+  }
+  G3.flame.visible = G3.lLight.intensity>0.15;
+
+  const n=getSeatCount();
+  const me=(scene3dMyIndex>=0 && scene3dMyIndex<n)?scene3dMyIndex:-1;
+  const aMy=(me>=0)? seatAngle(me,n) : -Math.PI/2;
+  const fr=scene3dFraming(n);
+  const seatR=fr.seatR, eyeY=fr.eyeY;
+  if(G3.fovCur===undefined) G3.fovCur=fr.fov;
+  G3.fovCur += (fr.fov-G3.fovCur)*0.08;
+  if(Math.abs(G3.camera.fov-G3.fovCur)>0.01){ G3.camera.fov=G3.fovCur; G3.camera.updateProjectionMatrix(); }
+  const tposX=Math.cos(aMy)*seatR, tposZ=Math.sin(aMy)*seatR;
+  if(G3.px===undefined){ G3.px=tposX; G3.py=eyeY; G3.pz=tposZ; }
+  G3.px += (tposX-G3.px)*0.12; G3.py += (eyeY-G3.py)*0.12; G3.pz += (tposZ-G3.pz)*0.12;
+  G3.camera.position.set(G3.px, G3.py, G3.pz);
+  scene3dYaw   += (scene3dYawT  -scene3dYaw  )*0.18;
+  scene3dPitch += (scene3dPitchT-scene3dPitch)*0.18;
+  const baseYaw=aMy+Math.PI, basePitch=fr.pitch;
+  const yaw=baseYaw+scene3dYaw;
+  const pitch=Math.max(-0.55, Math.min(0.5, basePitch+scene3dPitch));
+  G3.camera.lookAt(
+    G3.px + Math.cos(pitch)*Math.cos(yaw),
+    G3.py + Math.sin(pitch),
+    G3.pz + Math.cos(pitch)*Math.sin(yaw)
+  );
+  try{
+    const active = G3.pointTarget && performance.now()<G3.pointEnd;
+    G3.pointT += (((active?1:0)-G3.pointT)*0.18);
+    if(G3.myArm){
+      if(G3.pointT>0.02 && G3.pointTarget){
+        const TT=G3.T;
+        G3.camera.updateMatrixWorld();
+        const Plocal=G3.camera.worldToLocal(G3.pointTarget.clone());
+        const b=new TT.Vector3(0.2,-0.28,-0.42);
+        const dir=Plocal.sub(b); if(dir.lengthSq()<1e-5) dir.set(0,0,-1); dir.normalize();
+        G3.myArm.visible=true;
+        G3.myArm.position.copy(b);
+        G3.myArm.quaternion.copy(new TT.Quaternion().setFromUnitVectors(new TT.Vector3(0,1,0), dir));
+        const sc=0.45+0.55*G3.pointT; G3.myArm.scale.set(sc,sc,sc);
+      } else { G3.myArm.visible=false; }
+    }
+  }catch(e){}
+  try{ if(typeof joyUpdate==='function') joyUpdate(); }catch(e){}
+  G3.renderer.render(G3.scene, G3.camera);
+}
+
+async function scene3dShow(){
+  try{
+    await scene3dEnsure();
+    if(!G3) return;
+    scene3dOn=true;
+    document.body.classList.add('scene-on');
+    const c=document.getElementById('scene3d'); if(c) c.style.display='block';
+    scene3dSetPlayers(getSeatCount());
+    scene3dResize();
+    if(!scene3dRAF) scene3dLoop();
+  }catch(e){}
+}
+
+function scene3dHide(){
+  scene3dOn=false;
+  try{ if(G3){ G3.pointTarget=null; G3.pointT=0; } setPhaseBar(null); }catch(e){}
+  try{
+    document.body.classList.remove('scene-on');
+    const c=document.getElementById('scene3d'); if(c) c.style.display='none';
+    if(scene3dRAF){ cancelAnimationFrame(scene3dRAF); scene3dRAF=0; }
+  }catch(e){}
+}
+
+function scene3dNight(on){ scene3dWantNight=!!on; }
+
+try{(function initDrag(){
+  let dragging=false, lx=0, ly=0, dx0=0, dy0=0, moved=false, tdown=0, dtarget=null;
+  const noRotate=(el)=>{
+    while(el && el!==document.body){
+      if(el.tagName==='BUTTON'||el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.tagName==='A') return true;
+      if(el.id==='chatbox') return true;
+      if(el.classList && (el.classList.contains('log')||el.classList.contains('choice'))) return true;
+      el=el.parentElement;
+    }
+    return false;
+  };
+  const down=(x,y,t)=>{ if(!scene3dOn) return; dtarget=t; tdown=performance.now(); dx0=x; dy0=y; moved=false; if(noRotate(t)) return; dragging=true; lx=x; ly=y; };
+  const move=(x,y)=>{ if(Math.abs(x-dx0)>8||Math.abs(y-dy0)>8) moved=true; if(!dragging) return;
+    const dx=x-lx, dy=y-ly; lx=x; ly=y;
+    scene3dYawT   += dx*0.006;
+    scene3dPitchT -= dy*0.005;
+    scene3dYawT   = Math.max(-Math.PI, Math.min(Math.PI, scene3dYawT));
+    scene3dPitchT = Math.max(-0.7, Math.min(0.6, scene3dPitchT));
+  };
+  const up=(x,y)=>{ const tap = scene3dOn && !moved && (performance.now()-tdown)<500 && !noRotate(dtarget); dragging=false; if(tap) scene3dTryPoint(x,y); };
+  window.addEventListener('pointerdown', e=>down(e.clientX,e.clientY,e.target), {passive:true});
+  window.addEventListener('pointermove', e=>move(e.clientX,e.clientY), {passive:true});
+  window.addEventListener('pointerup', e=>up(e.clientX,e.clientY), {passive:true});
+  window.addEventListener('pointercancel', ()=>{ dragging=false; }, {passive:true});
+})();}catch(__e1){console.warn('initDrag init failed:',__e1);}
+
+if(typeof cue==='function'){
+  const _cue=cue;
+  cue=function(key){
+    try{ _cue(key); }catch(e){}
+    try{
+      if(key==='night'){ scene3dHide(); }
+      else { scene3dNight(false); scene3dShow(); }
+    }catch(e){}
+  };
+}
+
+if(typeof renderScene==='function'){
+  const _rs=renderScene;
+  renderScene=function(s){
+    try{
+      if(s){
+        if(typeof s.you==='number') scene3dMyIndex=s.you;
+        if(s.seats && s.seats.length) scene3dLastCount=s.seats.length;
+        else if(s.players && s.players.length) scene3dLastCount=s.players.length;
+        if(G3 && scene3dOn) scene3dSetPlayers(getSeatCount());
+      }
+    }catch(e){}
+    return _rs.apply(this, arguments);
+  };
+}
+
+['screenHome','screenOnlineMenu','renderLobby','screenSetup'].forEach(fn=>{
+  try{
+    if(typeof window[fn]==='function'){
+      const orig=window[fn];
+      window[fn]=function(){ scene3dHide(); try{ livesHide(); }catch(e){} try{ setPhaseBar(null); setSkipFloat(false); }catch(e){} return orig.apply(this, arguments); };
+    }
+  }catch(e){}
+});
+
+/* ════════ 화면 컨트롤 (오른쪽 조이스틱=시점 · 왼쪽 버튼=손 제스처) + 전체화면 ════════ */
+window.fullscreen=function(){
+  try{
+    if(document.fullscreenElement||document.webkitFullscreenElement){
+      (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);
+    } else {
+      const el=document.documentElement;
+      (el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el);
+    }
+  }catch(e){}
+};
+
+try{(function initControls(){
+  const VIEW_SPEED = 2.4;   // 시점 회전 속도 (누르고 있는 동안 계속 회전)
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp=(a,b,t)=>a+(b-a)*t;
+
+  let joyR={x:0,y:0};
+  let joyLast=0;
+
+  // 제스처별 손가락 굽힘값 (0=폄, 1=접음) : [엄지, 검지, 중지, 약지, 새끼]
+  const GEST={
+    middle:   [1, 1, 0, 1, 1],   // 중지 올리기
+    thumbsup: [0, 1, 1, 1, 1],   // 따봉
+    wag:      [1, 0, 1, 1, 1]    // 검지 펴고 양옆으로 흔들기
+  };
+  let curl=[1,1,1,1,1];          // 현재(렌더링) 굽힘값
+  let tgt =[1,1,1,1,1];          // 목표 굽힘값
+  let raise=0, raiseT=0;         // 손 들어올림 0~1
+  let gestureKind=null, gestureEnd=0, wagPhase=0, handBaseZ=0;
+
+  function playGesture(kind){
+    if(!GEST[kind]) return;
+    tgt=GEST[kind].slice();
+    gestureKind=kind;
+    raiseT=1;
+    gestureEnd=performance.now()+2400;
+  }
+  window.handGesture=playGesture;
+
+  /* ---- CSS ---- */
+  if(!document.getElementById('ctl-css')){
+    const st=document.createElement('style'); st.id='ctl-css';
+    st.textContent =
+      '.joy{position:fixed;bottom:26px;right:18px;width:112px;height:112px;border-radius:50%;'+
+      'background:rgba(20,24,33,.32);border:1px solid rgba(140,156,188,.45);z-index:60;'+
+      'display:none;touch-action:none;user-select:none;-webkit-user-select:none}'+
+      'body.scene-on .joy{display:block}'+
+      '.joy .knob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;'+
+      'border-radius:50%;background:rgba(233,227,213,.85);box-shadow:0 2px 10px rgba(0,0,0,.45);pointer-events:none}'+
+      '.joy .lbl{position:absolute;left:0;right:0;top:-20px;text-align:center;'+
+      'font:600 10px var(--mono);letter-spacing:.22em;color:var(--amber);opacity:.85;pointer-events:none}'+
+      '.gest{position:fixed;left:14px;bottom:20px;z-index:60;display:none;flex-direction:column;gap:8px}'+
+      'body.scene-on .gest{display:flex}'+
+      '.gest button{width:54px;height:54px;border-radius:14px;font-size:24px;padding:0;cursor:pointer;'+
+      'background:rgba(20,24,33,.55);border:1px solid rgba(140,156,188,.5);color:var(--bone);'+
+      'box-shadow:0 2px 10px rgba(0,0,0,.4)}'+
+      '.gest button:active{transform:translateY(1px)}'+
+      '#fsbtn{position:fixed;top:10px;right:12px;z-index:75;width:auto;padding:8px 12px;cursor:pointer;'+
+      'font:600 12px var(--sans);border-radius:10px;background:rgba(20,24,33,.7);'+
+      'border:1px solid var(--line);color:var(--bone)}';
+    document.head.appendChild(st);
+  }
+
+  /* ---- 전체화면 버튼 ---- */
+  if(!document.getElementById('fsbtn')){
+    const b=document.createElement('button'); b.id='fsbtn'; b.type='button'; b.textContent='⛶ 전체화면';
+    b.addEventListener('click', ()=>window.fullscreen());
+    document.body.appendChild(b);
+  }
+
+  /* ---- 시점 조이스틱 (오른쪽) ---- */
+  const elR=document.createElement('div'); elR.className='joy';
+  elR.innerHTML='<div class="lbl">시점</div><div class="knob"></div>';
+  document.body.appendChild(elR);
+  (function bindJoy(el, onVec){
+    const knob=el.querySelector('.knob');
+    let id=null, cx=0, cy=0, R=46;
+    const stop=e=>{ e.preventDefault(); e.stopPropagation(); };
+    function place(x,y){
+      let dx=x-cx, dy=y-cy; const d=Math.hypot(dx,dy);
+      if(d>R){ dx=dx/d*R; dy=dy/d*R; }
+      knob.style.transform='translate('+dx+'px,'+dy+'px)';
+      onVec(dx/R, dy/R);
+    }
+    el.addEventListener('pointerdown', e=>{ if(id!==null) return; id=e.pointerId;
+      try{ el.setPointerCapture(id); }catch(_){}
+      const r=el.getBoundingClientRect(); cx=r.left+r.width/2; cy=r.top+r.height/2; R=r.width/2-10;
+      stop(e); place(e.clientX,e.clientY); });
+    el.addEventListener('pointermove', e=>{ if(e.pointerId!==id) return; stop(e); place(e.clientX,e.clientY); });
+    const end=e=>{ if(e.pointerId!==id) return; stop(e); id=null; knob.style.transform='translate(0,0)'; onVec(0,0); };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  })(elR, (x,y)=>{ joyR.x=x; joyR.y=y; });
+
+  /* ---- 제스처 버튼 (왼쪽) ---- */
+  const gestWrap=document.createElement('div'); gestWrap.className='gest';
+  [['🖕','중지 올리기','middle'],['👍','따봉','thumbsup'],['☝️','검지 흔들기','wag']].forEach(g=>{
+    const b=document.createElement('button'); b.type='button'; b.title=g[1]; b.textContent=g[0];
+    b.addEventListener('pointerdown', e=>{ e.stopPropagation(); });
+    b.addEventListener('click', e=>{ e.stopPropagation(); playGesture(g[2]); try{ window.netGesture && window.netGesture(g[2]); }catch(_){} });
+    gestWrap.appendChild(b);
+  });
+  document.body.appendChild(gestWrap);
+
+  /* ---- 왼손 모델 (손바닥 + 손가락 5개) : 카메라에 부착 ---- */
+  function buildHand(T){
+    const skin=new T.MeshStandardMaterial({color:0xe7decb, roughness:0.6, metalness:0.0});
+    const cap=(rad,len)=>{
+      if(T.CapsuleGeometry) return new T.Mesh(new T.CapsuleGeometry(rad,len,5,12), skin);
+      const m=new T.Group();
+      m.add(new T.Mesh(new T.CylinderGeometry(rad,rad,len,12), skin));
+      const a=new T.Mesh(new T.SphereGeometry(rad,12,8),skin); a.position.y= len/2; m.add(a);
+      const c=new T.Mesh(new T.SphereGeometry(rad,12,8),skin); c.position.y=-len/2; m.add(c);
+      return m;
+    };
+    const H=new T.Group();
+    // 팔뚝(세로 고정)
+    const fore=cap(0.085,0.5); fore.position.y=-0.28; H.add(fore);
+    // 손목 피벗: 손바닥·손가락·엄지를 여기에 담아 손목에서 꺾이게(따봉/흔들기)
+    const wrist=new T.Group(); wrist.position.y=-0.05; H.add(wrist);
+    // 손바닥
+    const palm=new T.Mesh(new T.BoxGeometry(0.20,0.22,0.085), skin); palm.position.y=0.09; wrist.add(palm);
+    const palmTop=0.20;
+    // 손가락(검지·중지·약지·새끼): 마디(group) 회전으로 굽힘 표현
+    const fingers=[];
+    [[-0.066,0.155],[-0.022,0.182],[0.022,0.16],[0.063,0.125]].forEach(sp=>{
+      const fg=new T.Group(); fg.position.set(sp[0],palmTop,0);
+      const seg=cap(0.028,sp[1]); seg.position.y=sp[1]/2; fg.add(seg);
+      wrist.add(fg); fingers.push(fg);
+    });
+    // 엄지
+    const thumb=new T.Group(); thumb.position.set(-0.10,0.05,0.02);
+    const tseg=cap(0.034,0.14); tseg.position.y=0.07; thumb.add(tseg);
+    wrist.add(thumb);
+    H.userData={fingers, thumb, wrist};
+    return H;
+  }
+
+  function updateHand(dt){
+    if(typeof G3==='undefined' || !G3 || !G3.T) return;
+    const T=G3.T;
+    if(!G3.handObj){
+      G3.handObj=buildHand(T);
+      G3.handObj.position.set(-0.17,-0.46,-0.62);
+      G3.handObj.rotation.x=-0.18;
+      G3.handObj.visible=false;
+      try{ G3.camera.add(G3.handObj); }catch(_){}
+    }
+    const H=G3.handObj, ud=H.userData;
+    if(gestureKind && performance.now()>gestureEnd){ gestureKind=null; raiseT=0; tgt=[1,1,1,1,1]; }
+    for(let i=0;i<5;i++) curl[i]=lerp(curl[i],tgt[i],0.22);
+    raise=lerp(raise,raiseT,0.16);
+    H.visible = raise>0.02;
+    H.position.y = -0.46 + raise*0.16;
+    // 손목 회전: 따봉이면 시계방향 90°로 꺾어 완성, 검지흔들기면 양옆으로 흔듦
+    const baseZ = (gestureKind==='thumbsup') ? -Math.PI/2 : 0;
+    handBaseZ = lerp(handBaseZ, baseZ, 0.16);
+    let wagZ=0;
+    if(gestureKind==='wag'){ wagPhase+=dt*9; wagZ=Math.sin(wagPhase)*0.5*raise; }   // 양옆으로 흔들기
+    ud.wrist.rotation.z = handBaseZ + wagZ;
+    ud.fingers.forEach((fg,i)=>{ fg.rotation.x = -curl[i+1]*2.55; });               // 0=폄(위) · 1=접음(주먹)
+    // 엄지: 0=폄(따봉 — 손목 90° 회전 후 위를 향함) · 1=접음(다른 손가락처럼 주먹에 붙음)
+    const tc=curl[0];
+    ud.thumb.rotation.z = 1.5708 - tc*2.07;
+    ud.thumb.rotation.x = -tc*2.2;
+  }
+
+  /* ---- 매 프레임 (scene3dLoop에서 호출) → 누르고 있는 동안 계속 ---- */
+  window.joyUpdate=function(){
+    const now=performance.now();
+    let dt=joyLast?(now-joyLast)/1000:0.016; joyLast=now;
+    if(dt>0.05) dt=0.05;
+    if(joyR.x||joyR.y){            // 오른쪽 → 시점 (계속 회전)
+      scene3dYawT   += joyR.x * VIEW_SPEED * dt;
+      scene3dPitchT -= joyR.y * VIEW_SPEED * dt;
+      scene3dYawT   = Math.max(-Math.PI, Math.min(Math.PI, scene3dYawT));
+      scene3dPitchT = Math.max(-0.7, Math.min(0.6, scene3dPitchT));
+    }
+    try{ updateHand(dt); }catch(_){}
+  };
+})();}catch(__e2){console.warn('initControls init failed:',__e2);}
+
+/* ---------- 시작 ---------- */
+try{ initCueUI(); }catch(__e){ console.warn('initCueUI failed:',__e); }
+try{ screenHome(); }catch(__e){ try{ showErr('초기화 오류: '+((__e&&__e.message)||__e)); }catch(_){} }
+</script>
+</body>
 </html>
