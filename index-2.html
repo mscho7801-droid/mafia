@@ -577,9 +577,9 @@ let audioCtx=null, muted=false;
 const CUE={ intro:{c:'#d9a441',t:'자기소개'}, night:{c:'#7fa8d6',t:'밤'}, morning:{c:'#d9a441',t:'아침'}, discussion:{c:'#e9e3d5',t:'토론'}, voting:{c:'#d98f41',t:'투표'}, punishment:{c:'#b3433a',t:'처벌'}, secret:{c:'#a878c0',t:'비밀 대화'}, gameover:{c:'#e9e3d5',t:'종료'} };
 function initCueUI(){
   const o=document.createElement('div'); o.id='cue';
-  Object.assign(o.style,{position:'fixed',inset:'0',display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',opacity:'0',transition:'opacity .35s ease',zIndex:'60',background:'radial-gradient(60% 50% at 50% 50%, rgba(0,0,0,.6), rgba(0,0,0,0) 70%)'});
+  Object.assign(o.style,{position:'fixed',left:'0',right:'0',top:'0',display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',opacity:'0',transition:'opacity .3s ease',zIndex:'60',paddingTop:'calc(env(safe-area-inset-top, 0px) + 10px)'});
   const t=document.createElement('div'); t.id='cueText';
-  Object.assign(t.style,{fontFamily:'var(--serif)',fontSize:'42px',letterSpacing:'.1em'});
+  Object.assign(t.style,{fontFamily:'var(--sans)',fontWeight:'600',fontSize:'14px',letterSpacing:'.22em',color:'#fff',textShadow:'0 1px 6px rgba(0,0,0,.8)',padding:'5px 14px',borderRadius:'999px',background:'rgba(15,17,24,.5)',backdropFilter:'blur(4px)'});
   o.appendChild(t); document.body.appendChild(o);
   const mb=document.createElement('button'); mb.textContent='🔊';
   Object.assign(mb.style,{position:'fixed',top:'10px',right:'10px',width:'auto',padding:'7px 10px',borderRadius:'10px',background:'transparent',border:'1px solid var(--line)',color:'var(--bone)',fontSize:'15px',zIndex:'70',cursor:'pointer'});
@@ -589,8 +589,8 @@ function initCueUI(){
 function cue(key){
   const def=CUE[key]; if(!def) return;
   const o=document.getElementById('cue'), t=document.getElementById('cueText'); if(!o||!t) return;
-  t.textContent=def.t; t.style.color=def.c;
-  o.style.opacity='1'; setTimeout(()=>{ o.style.opacity='0'; }, 850);
+  t.textContent=def.t; t.style.color='#fff';
+  o.style.opacity='1'; setTimeout(()=>{ o.style.opacity='0'; }, 1100);
   tone(key);
 }
 function tone(key){
@@ -862,21 +862,105 @@ function removeBot(){
   for(let i=ROSTER.length-1;i>=0;i--){ if(ROSTER[i].bot){ ROSTER.splice(i,1); break; } }
   rebroadcastLobby();
 }
+/* ---- 봇 추론 헬퍼 ---- */
+function botMates(i){ // 같은 마피아 진영(자신 제외)
+  return O.players.filter(q=>q.role.faction==='mafia' && q.id!==i);
+}
+function botMateIds(i){ return new Set(botMates(i).map(q=>q.id)); }
+function susScore(i, voterId){
+  // voterId 입장에서 i가 마피아일 의심도 (높을수록 의심)
+  const ix=O.intel, p=O.players[i];
+  let s = (ix.suspicion[i]||0);
+  // 공개되어 '확정 무고'로 드러난 역할(생존 공개)은 의심도 대폭 하락
+  if(p.revealed && p.role.faction!=='mafia') s-=6;
+  if(p.revealed && p.role.faction==='mafia') s+=10;
+  // 토론에서 조용한 사람(채팅 적음)을 약하게 의심
+  const cc=ix.chatCount[i]||0; if(cc===0) s+=0.6;
+  return s;
+}
+function bumpSus(id, d){ if(id==null) return; const ix=O.intel; ix.suspicion[id]=(ix.suspicion[id]||0)+d; }
+
 function botNightTarget(i){
   const p=O.players[i], alive=oAlive(), others=alive.filter(q=>q.id!==i);
-  if(p.role.ability==='kill'){ const prey=others.filter(q=>q.role.faction!=='mafia'); const t=botRand(prey.length?prey:others); return t?t.id:null; }
-  if(p.role.ability==='protect'){ const t=botRand(alive); return t?t.id:null; }
-  if(p.role.ability==='investigate'){ const t=botRand(others); return t?t.id:null; }
+  if(!others.length) return null;
+  if(p.role.ability==='kill'){
+    const mates=botMateIds(i);
+    // 동료 마피아는 절대 제외
+    let prey=others.filter(q=>q.role.faction!=='mafia' && !mates.has(q.id));
+    if(!prey.length) prey=others.filter(q=>!mates.has(q.id));
+    if(!prey.length) prey=others;
+    // 1순위: 우리를 의심하는 위협(탐정/공개된 시민) — 의심도 높은 시민 우선 제거
+    prey.sort((a,b)=>{
+      const ta=(a.role.id==='detective'?3:0)+(a.revealed?2:0)+(O.intel.suspicion[a.id]||0)*0; 
+      const tb=(b.role.id==='detective'?3:0)+(b.revealed?2:0);
+      return tb-ta;
+    });
+    // 위협 후보가 여럿이면 약간 무작위성 부여(읽히지 않도록)
+    const topThreat = prey.filter(q=>q.role.id==='detective'||q.revealed);
+    if(topThreat.length && Math.random()<0.7) return botRand(topThreat).id;
+    return botRand(prey.slice(0, Math.min(3,prey.length))).id;
+  }
+  if(p.role.ability==='protect'){
+    p._mem=p._mem||{}; 
+    // 직전에 공격받아 다친(목숨 잃은) 사람을 우선 보호
+    const wounded=alive.filter(q=>q.lives<2 && q.alive);
+    if(wounded.length && Math.random()<0.6) return botRand(wounded).id;
+    // 가끔 자기 보호(연속 자기보호는 지양)
+    if(Math.random()<0.3 && p._mem.lastProtect!==p.id){ p._mem.lastProtect=p.id; return p.id; }
+    // 그 외엔 신뢰가는(의심 낮은=시민으로 보이는) 사람 보호
+    const cand=alive.slice().sort((a,b)=>(O.intel.suspicion[a.id]||0)-(O.intel.suspicion[b.id]||0));
+    const t=botRand(cand.slice(0,Math.min(3,cand.length))); p._mem.lastProtect=t?t.id:null; return t?t.id:null;
+  }
+  if(p.role.ability==='investigate'){
+    p._mem=p._mem||{mafia:[],safe:[],checked:[]};
+    const checked=new Set(p._mem.checked||[]);
+    // 아직 조사 안 한 사람 우선, 그 중 의심도 높은 순
+    let pool=others.filter(q=>!checked.has(q.id));
+    if(!pool.length) pool=others;
+    pool.sort((a,b)=>(O.intel.suspicion[b.id]||0)-(O.intel.suspicion[a.id]||0));
+    const t=botRand(pool.slice(0,Math.min(2,pool.length)));
+    return t?t.id:null;
+  }
   return null;
 }
 function botVoteTarget(i){
   const p=O.players[i], alive=oAlive(), others=alive.filter(q=>q.id!==i);
   if(!others.length) return null;
-  if(p.role.faction==='mafia'){ const town=others.filter(q=>q.role.faction!=='mafia'); return botRand(town.length?town:others).id; }
-  const mem=((p._mem&&p._mem.mafia)||[]).filter(id=>alive.some(a=>a.id===id&&a.id!==i));
-  if(mem.length) return botRand(mem);
-  if(Math.random()<0.2) return null; // 가끔 기권
-  return botRand(others).id;
+  const mates=botMateIds(i);
+
+  if(p.role.faction==='mafia'){
+    // 동료는 절대 안 찍음. 동료가 처형 위협(최다 의심)이면 분산용으로 무고 시민 지목
+    const town=others.filter(q=>q.role.faction!=='mafia');
+    const pool=town.length?town:others.filter(q=>!mates.has(q.id));
+    if(!pool.length) return null;
+    // 이미 공개된 시민(무고 확정)보다, 위협되는 시민(탐정/의심 적은 진짜 시민)을 우선 제거
+    pool.sort((a,b)=>{
+      const ta=(a.role.id==='detective'?2:0) - (a.revealed?3:0) + Math.random();
+      const tb=(b.role.id==='detective'?2:0) - (b.revealed?3:0) + Math.random();
+      return tb-ta;
+    });
+    return pool[0].id;
+  }
+
+  // 탐정: 조사로 확인된 마피아가 생존 중이면 확정 투표
+  if(p.role.ability==='investigate' && p._mem){
+    const conf=(p._mem.mafia||[]).filter(id=>alive.some(a=>a.id===id&&a.id!==i));
+    if(conf.length) return botRand(conf);
+    // 확인된 무고는 회피하고 나머지 중 의심도 높은 사람
+    const safe=new Set(p._mem.safe||[]);
+    const cand=others.filter(q=>!safe.has(q.id));
+    if(cand.length){ cand.sort((a,b)=>(O.intel.suspicion[b.id]||0)-(O.intel.suspicion[a.id]||0)); 
+      if((O.intel.suspicion[cand[0].id]||0)>0.5) return cand[0].id; }
+  }
+
+  // 일반 시민: 의심도 기반 투표 (자기 자신 제외)
+  const ranked=others.slice().sort((a,b)=>susScore(b.id,i)-susScore(a.id,i));
+  const top=ranked[0];
+  // 의심 근거가 충분하면 최다 의심자에게, 아니면 기권 확률 높임
+  if(top && susScore(top.id,i)>0.8) return top.id;
+  if(Math.random()<0.45) return null; // 근거 약하면 기권
+  // 약한 근거: 상위 의심자 중 무작위
+  return botRand(ranked.slice(0,Math.min(2,ranked.length))).id;
 }
 function scheduleBots(phase){
   if(!O) return;
@@ -889,8 +973,10 @@ function scheduleBots(phase){
         if(!O||O.phase!=='night'||!O.pending.has(p.id)) return;
         const tgt=botNightTarget(p.id);
         if(p.role.ability==='investigate' && tgt!=null){
-          const t=O.players[tgt]; p._mem=p._mem||{mafia:[]};
-          if(t.role.faction==='mafia' && !p._mem.mafia.includes(tgt)) p._mem.mafia.push(tgt);
+          const t=O.players[tgt]; p._mem=p._mem||{mafia:[],safe:[],checked:[]};
+          if(!p._mem.checked.includes(tgt)) p._mem.checked.push(tgt);
+          if(t.role.faction==='mafia'){ if(!p._mem.mafia.includes(tgt)) p._mem.mafia.push(tgt); bumpSus(tgt, 4); }
+          else { if(!p._mem.safe.includes(tgt)) p._mem.safe.push(tgt); }
           hostInput(p.peerId,{t:'night',target:tgt});
           hostInput(p.peerId,{t:'ack'});
         }else hostInput(p.peerId,{t:'night',target:tgt});
@@ -899,7 +985,20 @@ function scheduleBots(phase){
       if(p.alive&&O.pending&&O.pending.has(p.id)) setTimeout(()=>{ if(O&&O.phase==='vote'&&O.pending.has(p.id)) hostInput(p.peerId,{t:'vote',target:botVoteTarget(p.id)}); }, 900+Math.random()*2600);
     }else if(phase==='disc'){
       if(!p.alive) return;
-      if(Math.random()<0.7) setTimeout(()=>{ if(O&&O.phase==='discussion') hostChat(p.peerId, botRand(BOT_LINES), null); }, 1500+Math.random()*9000);
+      const speak=()=>{
+        if(!O||O.phase!=='discussion') return;
+        let line=botRand(BOT_LINES);
+        // 의심 대상을 거명하는 발언(2일차+ 또는 단서가 쌓였을 때)
+        const targetId=botVoteTarget(p.id);
+        if(targetId!=null && O.players[targetId] && O.players[targetId].alive && Math.random()<0.55){
+          const nm=O.players[targetId].name;
+          const accuse=[`${nm} 님 좀 수상하지 않아?`,`난 ${nm} 의심돼`,`${nm} 한테 한 표 줄까 생각 중`,`${nm} 행동이 걸리는데`];
+          line=botRand(accuse);
+        }
+        hostChat(p.peerId, line, null);
+      };
+      if(Math.random()<0.8) setTimeout(speak, 1500+Math.random()*8000);
+      if(Math.random()<0.4) setTimeout(speak, 9000+Math.random()*7000); // 가끔 두 번 발언
       setTimeout(()=>{ if(O&&O.phase==='discussion') hostInput(p.peerId,{t:'skip'}); }, 12000+Math.random()*12000);
     }
   });
@@ -912,7 +1011,8 @@ function oStartGame(){
   const ids=onlineSpread(n, lobbyJester);
   O={ players:ROSTER.map((r,i)=>({id:i, peerId:r.peerId, name:r.name, role:ROLES[ids[i]], alive:true, lives:2, revealed:false, deathCause:null, bot:!!r.bot, _mem:null})),
       round:1, log:[{t:'sys', s:`${n}명에게 2개의 목숨과 역할이 분배되었습니다.`}],
-      phase:'', nightActions:[], votes:{}, notes:[], pending:new Set(), _win:null, _discTimer:null, _secTimer:null, _ackTimer:null };
+      phase:'', nightActions:[], votes:{}, notes:[], pending:new Set(), _win:null, _discTimer:null, _secTimer:null, _ackTimer:null,
+      intel:{ suspicion:{}, lastVotes:{}, chatCount:{}, revealedSafe:new Set() } };
   oRoleReveal();
 }
 function oRoleReveal(){
@@ -997,6 +1097,11 @@ function oPunish(){
   Object.values(O.votes).forEach(t=>{ if(t!=null) counts[t]=(counts[t]||0)+1; });
   let max=0, top=null, tie=false;
   Object.entries(counts).forEach(([id,n])=>{ if(n>max){max=n; top=+id; tie=false;} else if(n===max){ tie=true; } });
+  // 봇 추론: 표를 받은 만큼 약하게 의심 누적, 기록
+  if(O.intel){
+    Object.entries(counts).forEach(([id,n])=>{ bumpSus(+id, n*0.4); });
+    O.intel.lastVotes=Object.assign({}, O.votes);
+  }
   let text;
   if(top===null||tie){
     text=(top===null?'유효한 표가 없습니다.':'최다 득표가 동점입니다.')+' 이번엔 아무도 지목되지 않습니다.';
@@ -1015,6 +1120,16 @@ function oPunish(){
     }
     oStatusAll();
     oStatus(top, p.lives<=0 ? '투표로 지목되어 쓰러졌습니다.' : '투표로 지목되어 목숨을 잃었습니다.');
+    // 봇 추론: 처형 대상의 정체가 드러나면(쓰러져 역할 노출) 투표 행태를 사후 평가
+    if(O.intel && p.alive===false){
+      const wasMafia = p.role.faction==='mafia';
+      Object.entries(O.votes).forEach(([voter,tgt])=>{
+        const vid=+voter;
+        if(tgt===top){ bumpSus(vid, wasMafia ? -2.5 : +1.5); }      // 정확히 찍었으면 신뢰, 무고 몰면 의심
+        else if(wasMafia && tgt==null){ bumpSus(vid, +0.8); }       // 마피아인데 기권한 사람 약하게 의심
+      });
+      if(wasMafia){ O.intel.suspicion[top]=0; } // 이미 제거됨
+    }
   }
   const w=oCheckWin(); O._win=w;
   oBroadcast({kind:'punish', round:O.round, text, seats:seatPayload(), win:!!w});
@@ -1029,7 +1144,9 @@ function oSecret(){
   if(O._secTimer) clearTimeout(O._secTimer);
   O._secTimer=setTimeout(()=>{ if(O&&O.phase==='secret') oAfterSecret(); }, 45000);
 }
-function oAfterSecret(){ if(O._secTimer){ clearTimeout(O._secTimer); O._secTimer=null; } O.round++; oNight(); }
+function oAfterSecret(){ if(O._secTimer){ clearTimeout(O._secTimer); O._secTimer=null; }
+  if(O.intel){ Object.keys(O.intel.suspicion).forEach(k=>{ O.intel.suspicion[k]*=0.7; }); O.intel.chatCount={}; }
+  O.round++; oNight(); }
 function oGameover(w){
   O.phase='over';
   if(O._discTimer){ clearTimeout(O._discTimer); O._discTimer=null; }
@@ -1536,6 +1653,7 @@ function hostChat(senderPeerId, text, to){
   if(playing && (O.phase==='night'||O.phase==='vote')){ // 밤·투표 중 공개 발언 제한(귓속말은 가능)
     chatForwardTo(senderPeerId, {text:'지금은 공개 발언이 제한됩니다 — 귓속말은 가능합니다.', scope:'sys'}); return;
   }
+  if(p && O.intel){ O.intel.chatCount[p.id]=(O.intel.chatCount[p.id]||0)+1; }
   chatForward({name:senderName, text, scope:'public'}, O.players.map(x=>x.peerId));
 }
 function chatSend(){
